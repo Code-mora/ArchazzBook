@@ -324,7 +324,31 @@ body {
 .hero-gradient {
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.9) 0%, rgba(118, 75, 162, 0.9) 100%);
+    background: linear-gradient(135deg, 
+        rgba(102, 126, 234, 0.9) 0%, 
+        rgba(118, 75, 162, 0.9) 50%,
+        rgba(236, 72, 153, 0.9) 100%
+    );
+    background-size: 400% 400%;
+    animation: gradientWave 8s ease-in-out infinite;
+}
+
+@keyframes gradientWave {
+    0% {
+        background-position: 0% 50%;
+    }
+    25% {
+        background-position: 50% 25%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    75% {
+        background-position: 50% 75%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
 }
 
 .floating-shapes {
@@ -336,41 +360,51 @@ body {
 .shape {
     position: absolute;
     border-radius: 50%;
-    opacity: 0.1;
-    animation: float 20s infinite ease-in-out;
+    opacity: 0.15;
+    animation: float 15s infinite ease-in-out;
+    backdrop-filter: blur(80px);
 }
 
 .shape-1 {
-    width: 300px;
-    height: 300px;
-    background: white;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
     top: 10%;
     left: 10%;
     animation-delay: 0s;
 }
 
 .shape-2 {
-    width: 200px;
-    height: 200px;
-    background: white;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(253, 224, 71, 0.3) 0%, transparent 70%);
     top: 60%;
     right: 20%;
     animation-delay: 5s;
 }
 
 .shape-3 {
-    width: 150px;
-    height: 150px;
-    background: white;
+    width: 250px;
+    height: 250px;
+    background: radial-gradient(circle, rgba(252, 165, 165, 0.3) 0%, transparent 70%);
     bottom: 20%;
     left: 60%;
     animation-delay: 10s;
 }
 
 @keyframes float {
-    0%, 100% { transform: translate(0, 0) rotate(0deg); }
-    33% { transform: translate(30px, -30px) rotate(120deg); }
-    66% { transform: translate(-30px, 30px) rotate(240deg); }
+    0%, 100% { 
+        transform: translate(0, 0) scale(1) rotate(0deg); 
+    }
+    25% {
+        transform: translate(40px, -40px) scale(1.1) rotate(90deg);
+    }
+    50% {
+        transform: translate(-20px, 40px) scale(0.9) rotate(180deg);
+    }
+    75% {
+        transform: translate(-40px, -20px) scale(1.05) rotate(270deg);
+    }
 }
 
 .hero-content {
@@ -670,6 +704,7 @@ body {
     margin-bottom: 1rem;
     display: -webkit-box;
     -webkit-line-clamp: 3;
+    line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -1016,6 +1051,11 @@ body {
 }
 
 @media (max-width: 768px) {
+    /* Navigation */
+    .nav-container {
+        padding: 1rem 1.25rem;
+    }
+    
     .nav-links {
         position: fixed;
         top: 70px;
@@ -1023,12 +1063,13 @@ body {
         right: 0;
         background: white;
         flex-direction: column;
-        padding: 2rem;
+        padding: 1.5rem;
         box-shadow: var(--shadow-lg);
         transform: translateY(-100%);
         opacity: 0;
         visibility: hidden;
         transition: var(--transition-normal);
+        gap: 1rem;
     }
     
     .nav-links.active {
@@ -1041,28 +1082,307 @@ body {
         display: block;
     }
     
+    /* Hero Section */
+    .hero {
+        min-height: auto;
+        padding: 80px 0 3rem;
+    }
+    
+    .hero-content {
+        padding: 2rem 1.25rem;
+        gap: 2rem;
+    }
+    
     .hero-title {
-        font-size: 2.5rem;
+        font-size: 2rem;
+        line-height: 1.2;
+    }
+    
+    .hero-subtitle {
+        font-size: 1rem;
     }
     
     .hero-buttons {
         flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .btn-large {
+        padding: 0.875rem 1.5rem;
+        font-size: 1rem;
     }
     
     .hero-stats {
         gap: 1.5rem;
+        flex-wrap: wrap;
+        justify-content: center;
     }
     
-    .section-title {
+    .stat-number {
         font-size: 2rem;
     }
     
+    .stat-label {
+        font-size: 0.8rem;
+    }
+    
+    .book-3d {
+        width: 280px;
+        height: 380px;
+    }
+    
+    .book-cover-3d::after {
+        font-size: 2rem;
+        letter-spacing: 0.3rem;
+    }
+    
+    /* Sections */
+    .books-section,
+    .about-section {
+        padding: 3rem 1.25rem;
+    }
+    
+    .section-header {
+        margin-bottom: 2rem;
+    }
+    
+    .section-title {
+        font-size: 1.75rem;
+    }
+    
+    .section-subtitle {
+        font-size: 1rem;
+    }
+    
+    /* Book Controls */
+    .books-controls {
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .search-bar {
+        min-width: 100%;
+    }
+    
+    .search-bar input,
+    .genre-filter select {
+        padding: 0.875rem 1rem 0.875rem 3rem;
+        font-size: 0.9375rem;
+    }
+    
+    .genre-filter {
+        min-width: 100%;
+    }
+    
+    /* Books Grid */
     .books-grid {
         grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    /* About Section */
+    .about-content {
+        gap: 2rem;
+    }
+    
+    .about-text p {
+        font-size: 1rem;
+    }
+    
+    .features-grid {
+        gap: 1.5rem;
+    }
+    
+    .feature-icon {
+        width: 50px;
+        height: 50px;
+        font-size: 1.25rem;
+    }
+    
+    /* Footer */
+    .footer {
+        padding: 2rem 1.25rem 1.25rem;
+    }
+    
+    .footer-content {
+        gap: 2rem;
+    }
+    
+    /* Modal */
+    .modal {
+        padding: 1rem;
     }
     
     .modal-content {
-        padding: 2rem;
+        padding: 2rem 1.5rem;
+    }
+    
+    .modal-content h2 {
+        font-size: 1.5rem;
+    }
+    
+    .book-details-info h2 {
+        font-size: 1.75rem;
+    }
+    
+    .book-meta {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}
+
+/* Small Mobile Devices (Vivo Y15 and similar) */
+@media (max-width: 480px) {
+    /* Typography */
+    .hero-title {
+        font-size: 1.75rem;
+    }
+    
+    .section-title {
+        font-size: 1.5rem;
+    }
+    
+    /* Spacing */
+    .hero-content {
+        padding: 1.5rem 1rem;
+    }
+    
+    .books-section,
+    .about-section {
+        padding: 2rem 1rem;
+    }
+    
+    .nav-container {
+        padding: 0.875rem 1rem;
+    }
+    
+    /* Logo */
+    .logo {
+        font-size: 1.25rem;
+    }
+    
+    .logo i {
+        font-size: 1.5rem;
+    }
+    
+    /* Buttons */
+    .btn {
+        padding: 0.625rem 1.25rem;
+        font-size: 0.9375rem;
+    }
+    
+    .btn-large {
+        padding: 0.75rem 1.25rem;
+        font-size: 0.9375rem;
+    }
+    
+    /* Hero Stats */
+    .hero-stats {
+        gap: 1rem;
+    }
+    
+    .stat-number {
+        font-size: 1.75rem;
+    }
+    
+    .stat-label {
+        font-size: 0.75rem;
+    }
+    
+    /* 3D Book */
+    .book-3d {
+        width: 240px;
+        height: 330px;
+    }
+    
+    .book-cover-3d::after {
+        font-size: 1.5rem;
+        letter-spacing: 0.25rem;
+    }
+    
+    /* Search & Filter */
+    .search-bar input,
+    .genre-filter select {
+        padding: 0.75rem 0.875rem 0.75rem 2.75rem;
+        font-size: 0.875rem;
+    }
+    
+    .search-bar i,
+    .genre-filter i {
+        left: 1rem;
+        font-size: 1rem;
+    }
+    
+    /* Book Cards */
+    .book-info {
+        padding: 1.25rem;
+    }
+    
+    .book-title {
+        font-size: 1.125rem;
+    }
+    
+    /* Features */
+    .feature-card {
+        gap: 1rem;
+    }
+    
+    .feature-icon {
+        width: 45px;
+        height: 45px;
+        font-size: 1.125rem;
+    }
+    
+    .feature-card h3 {
+        font-size: 1.125rem;
+    }
+    
+    /* Modal */
+    .modal-content {
+        padding: 1.5rem 1.25rem;
+    }
+    
+    .modal-close {
+        top: 1rem;
+        right: 1rem;
+        width: 36px;
+        height: 36px;
+    }
+    
+    /* Footer */
+    .footer {
+        padding: 1.5rem 1rem 1rem;
+    }
+    
+    .social-links a {
+        width: 36px;
+        height: 36px;
+        font-size: 1.125rem;
+    }
+}
+
+/* Extra Small Devices */
+@media (max-width: 360px) {
+    .hero-title {
+        font-size: 1.5rem;
+    }
+    
+    .section-title {
+        font-size: 1.375rem;
+    }
+    
+    .book-3d {
+        width: 200px;
+        height: 280px;
+    }
+    
+    .stat-number {
+        font-size: 1.5rem;
+    }
+    
+    .btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
     }
 }
 
