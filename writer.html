@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <base target="_self">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Writer - ArchazzBook</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Quill Rich Text Editor -->
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <link href="quill-fonts.css" rel="stylesheet">
+    <style>
+        .writer-container {
+            min-height: 100vh;
+            background: var(--gray-lighter);
+            padding-top: 80px;
+        }
+
+        .writer-header {
+            background: white;
+            padding: 1.5rem 2rem;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 3rem;
+            position: sticky;
+            top: 76px;
+            z-index: 50;
+        }
+
+        .writer-header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .book-title-input {
+            flex: 1;
+            max-width: 400px;
+        }
+
+        .book-title-input input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--gray-lighter);
+            border-radius: var(--radius-md);
+            font-size: 1.125rem;
+            font-weight: 600;
+            font-family: var(--font-display);
+        }
+
+        .writer-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .chapter-selector {
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--primary);
+            border-radius: var(--radius-md);
+            background: white;
+            color: var(--dark);
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .writer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1.5rem 2rem 4rem;
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 2rem;
+        }
+
+        .pages-container {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            padding-top: 2rem;
+        }
+
+        /* A4 Paper Size */
+        .writer-page {
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-xl);
+            padding: 3rem 2.5rem;
+            max-width: 21cm;
+            min-height: 29.7cm;
+            margin: 0 auto;
+            position: relative;
+            transition: var(--transition-normal);
+        }
+
+        .writer-page:hover {
+            box-shadow: var(--shadow-2xl);
+        }
+
+        .page-header {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .page-number-badge {
+            background: var(--primary);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-md);
+            font-size: 0.75rem;
+            font-weight: 600;
+            font-family: var(--font-primary);
+        }
+
+        .page-word-count {
+            background: var(--gray-lighter);
+            color: var(--dark);
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-md);
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .page-delete-btn {
+            background: #EF4444;
+            color: white;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Quill Editor in A4 context */
+        .page-editor {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 1.125rem;
+            line-height: 1.8;
+            color: var(--dark-light);
+        }
+
+        .page-editor .ql-container {
+            border: none;
+            min-height: 800px;
+            font-family: 'Times New Roman', Times, serif;
+        }
+
+        .page-editor .ql-editor {
+            min-height: 800px;
+            padding: 0;
+            font-size: 1.125rem;
+            line-height: 1.8;
+        }
+
+        .page-editor .ql-toolbar {
+            position: sticky;
+            top: 160px;
+            background: white;
+            border: 2px solid var(--gray-lighter);
+            border-radius: var(--radius-md);
+            z-index: 40;
+            margin-top: 1rem;
+            margin-bottom: 1.5rem;
+            white-space: nowrap;
+            overflow-x: auto;
+        }
+
+        .add-page-btn {
+            width: 100%;
+            padding: 2rem;
+            border: 2px dashed var(--primary);
+            background: white;
+            border-radius: var(--radius-lg);
+            color: var(--primary);
+            font-size: 1.125rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: var(--transition-fast);
+        }
+
+        .add-page-btn:hover {
+            background: var(--gray-lighter);
+            transform: translateY(-2px);
+        }
+
+        /* Sidebar */
+        .writer-sidebar {
+            position: sticky;
+            top: 180px;
+            height: fit-content;
+        }
+
+        .sidebar-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .sidebar-card h3 {
+            font-size: 1.125rem;
+            margin-bottom: 1rem;
+            color: var(--dark);
+        }
+
+        .stats-grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background: var(--gray-lighter);
+            border-radius: var(--radius-md);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--gray);
+        }
+
+        .stat-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .chapter-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .chapter-item {
+            padding: 0.75rem;
+            border: 2px solid var(--gray-lighter);
+            border-radius: var(--radius-md);
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: var(--transition-fast);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chapter-item:hover {
+            border-color: var(--primary);
+            background: var(--gray-lighter);
+        }
+
+        .chapter-item.active {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+        }
+
+        .chapter-info span {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--gray);
+            margin-top: 0.25rem;
+        }
+
+        .chapter-actions {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .chapter-action-btn {
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: var(--gray-lighter);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+        }
+
+        .chapter-action-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .chapter-action-btn.delete:hover {
+            background: #EF4444;
+        }
+
+        @media (max-width: 1024px) {
+            .writer-content {
+                grid-template-columns: 1fr;
+            }
+
+            .writer-sidebar {
+                position: static;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .writer-header-content {
+                flex-direction: column;
+            }
+
+            .book-title-input {
+                max-width: 100%;
+            }
+
+            .writer-page {
+                padding: 2rem 1.5rem;
+                min-height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo">
+                <i class="fas fa-book-open"></i>
+                <span>ArchazzBook</span>
+            </a>
+            <div class="nav-links">
+                <a href="dashboard.html" class="nav-link">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+                <div class="user-menu">
+                    <div class="user-avatar">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                    <div class="dropdown">
+                        <button class="dropdown-toggle">
+                            <span id="user-name">Archazz</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="dropdown-menu">
+                            <a href="dashboard.html">
+                                <i class="fas fa-tachometer-alt"></i> Dashboard
+                            </a>
+                            <a href="#" onclick="logout()">
+                                <i class="fas fa-sign-out-alt"></i> Logout
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Writer -->
+    <div class="writer-container">
+        <!-- Header -->
+        <div class="writer-header">
+            <div class="writer-header-content">
+                <div class="book-title-input">
+                    <input type="text" id="book-title" placeholder="Enter your book title..." value="Untitled Story">
+                </div>
+
+                <div class="writer-actions">
+                    <select class="chapter-selector" id="chapter-selector">
+                        <option value="1">Chapter 1</option>
+                    </select>
+                    <button class="btn btn-outline" onclick="newChapter()">
+                        <i class="fas fa-plus"></i> New Chapter
+                    </button>
+                    <button class="btn btn-primary" onclick="saveBook()">
+                        <i class="fas fa-save"></i> Save & Publish
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="writer-content">
+            <!-- Pages -->
+            <div class="pages-container" id="pages-container">
+                <!-- Pages will be dynamically added here -->
+            </div>
+
+            <!-- Sidebar -->
+            <div class="writer-sidebar">
+                <!-- Stats -->
+                <div class="sidebar-card">
+                    <h3><i class="fas fa-chart-line"></i> Statistics</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-label">Total Words</span>
+                            <span class="stat-value" id="total-words">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Total Pages</span>
+                            <span class="stat-value" id="total-pages-count">1</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Chapters</span>
+                            <span class="stat-value" id="total-chapters">1</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chapters -->
+                <div class="sidebar-card">
+                    <h3><i class="fas fa-book"></i> Chapters</h3>
+                    <div class="chapter-list" id="chapter-list">
+                        <!-- Chapters will be listed here -->
+                    </div>
+                    <button class="btn btn-outline btn-full" onclick="newChapter()" style="margin-top: 1rem;">
+                        <i class="fas fa-plus"></i> Add Chapter
+                    </button>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="sidebar-card">
+                    <h3><i class="fas fa-cog"></i> Quick Actions</h3>
+                    <button class="btn btn-outline btn-full" onclick="uploadCover()" style="margin-bottom: 0.5rem;">
+                        <i class="fas fa-image"></i> Upload Cover
+                    </button>
+                    <button class="btn btn-outline btn-full" onclick="previewBook()">
+                        <i class="fas fa-eye"></i> Preview
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cover Upload Modal -->
+    <div id="cover-modal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal('cover-modal')">
+                <i class="fas fa-times"></i>
+            </button>
+            <h2>Upload Book Cover</h2>
+            <div class="file-upload" id="cover-upload" onclick="document.getElementById('cover-input').click()">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <p><strong>Click to upload cover image</strong></p>
+                <p style="color: var(--gray); font-size: 0.875rem;">PNG, JPG up to 5MB</p>
+            </div>
+            <input type="file" id="cover-input" accept="image/*" style="display: none;" onchange="handleCoverUpload(event)">
+            <div id="cover-preview" class="preview-container" style="display: none;">
+                <img id="preview-img" class="preview-image" src="" alt="Cover preview" style="max-width: 300px; border-radius: var(--radius-lg);">
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <script src="writer.js"></script>
+</body>
+</html>

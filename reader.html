@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <base target="_self">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reader - ArchazzBook</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        .reader-container {
+            min-height: 100vh;
+            background: var(--gray-lighter);
+            padding-top: 80px;
+        }
+        
+        .reader-header {
+            background: white;
+            padding: 1rem 2rem;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 2rem;
+        }
+        
+        .reader-header-content {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .book-info-header {
+            flex: 1;
+        }
+        
+        .book-info-header h1 {
+            font-size: 1.5rem;
+            font-family: var(--font-display);
+            margin-bottom: 0.25rem;
+        }
+        
+        .book-info-header p {
+            color: var(--gray);
+            font-size: 0.875rem;
+        }
+        
+        .reader-controls {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .reader-content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 2rem 4rem;
+        }
+        
+        /* A4 Paper Size - 210mm x 297mm ratio (1:1.414) */
+        .reader-paper {
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-xl);
+            padding: 3rem 2.5rem;
+            /* A4 aspect ratio with max-width */
+            max-width: 21cm;
+            min-height: 29.7cm;
+            margin: 0 auto;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 1.125rem;
+            line-height: 1.8;
+            color: var(--dark-light);
+            position: relative;
+        }
+        
+        .reader-paper h2 {
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            color: var(--dark);
+        }
+        
+        .reader-paper p {
+            margin-bottom: 1.5rem;
+            text-align: justify;
+        }
+        
+        /* Page Info Badge */
+        .page-info {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: var(--primary);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-md);
+            font-size: 0.75rem;
+            font-weight: 600;
+            font-family: var(--font-primary);
+        }
+        
+        /* Pagination Controls */
+        .reader-pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .pagination-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: white;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: var(--transition-fast);
+            font-weight: 600;
+        }
+        
+        .pagination-btn:hover:not(:disabled) {
+            background: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .pagination-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        
+        .pagination-info {
+            font-weight: 600;
+            color: var(--dark);
+            padding: 0.75rem 1rem;
+            background: white;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .reader-navigation {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        
+        .reader-settings {
+            position: fixed;
+            right: 2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .settings-btn {
+            width: 48px;
+            height: 48px;
+            border: none;
+            background: var(--gray-lighter);
+            color: var(--dark);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            transition: var(--transition-fast);
+        }
+        
+        .settings-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .settings-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .progress-bar {
+            position: fixed;
+            top: 76px;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gray-lighter);
+            z-index: 100;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--gradient-primary);
+            transition: width 0.3s ease;
+        }
+        
+        @media (max-width: 768px) {
+            .reader-paper {
+                padding: 2rem 1.5rem;
+                min-height: auto;
+            }
+            
+            .reader-settings {
+                position: static;
+                transform: none;
+                flex-direction: row;
+                margin: 0 2rem 2rem;
+                justify-content: center;
+            }
+            
+            .reader-header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .pagination-btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.875rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo">
+                <i class="fas fa-book-open"></i>
+                <span>ArchazzBook</span>
+            </a>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link">
+                    <i class="fas fa-arrow-left"></i> Back to Library
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Progress Bar -->
+    <div class="progress-bar">
+        <div class="progress-fill" id="reading-progress"></div>
+    </div>
+
+    <!-- Reader -->
+    <div class="reader-container">
+        <!-- Header -->
+        <div class="reader-header">
+            <div class="reader-header-content">
+                <div class="book-info-header">
+                    <h1 id="reader-book-title">Loading...</h1>
+                    <p>by <span id="reader-book-author">Archazz</span></p>
+                </div>
+                <div class="reader-controls">
+                    <button class="btn btn-outline" onclick="window.history.back()">
+                        <i class="fas fa-times"></i> Close
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reading Settings -->
+        <div class="reader-settings">
+            <button class="settings-btn" onclick="decreaseFontSize()" title="Decrease font size">
+                <i class="fas fa-minus"></i>
+            </button>
+            <button class="settings-btn active" onclick="resetFontSize()" title="Reset font size">
+                <i class="fas fa-font"></i>
+            </button>
+            <button class="settings-btn" onclick="increaseFontSize()" title="Increase font size">
+                <i class="fas fa-plus"></i>
+            </button>
+            <div style="height: 1px; background: var(--gray-lighter); margin: 0.5rem 0;"></div>
+            <button class="settings-btn" onclick="toggleTheme()" title="Toggle theme" id="theme-btn">
+                <i class="fas fa-moon"></i>
+            </button>
+        </div>
+
+        <!-- Content -->
+        <div class="reader-content">
+            <div class="reader-paper" id="reader-paper">
+                <div class="page-info" id="page-info">Page 1 of 1</div>
+                <div id="story-content">
+                    <!-- Story will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Pagination Controls -->
+            <div class="reader-pagination" id="pagination-controls" style="display: none;">
+                <button class="pagination-btn" id="prev-page-btn" onclick="previousPage()">
+                    <i class="fas fa-chevron-left"></i> Previous
+                </button>
+                <div class="pagination-info">
+                    Page <span id="current-page">1</span> of <span id="total-pages">1</span>
+                </div>
+                <button class="pagination-btn" id="next-page-btn" onclick="nextPage()">
+                    Next <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+
+            <div class="reader-navigation">
+                <button class="btn btn-large btn-outline" onclick="window.history.back()">
+                    <i class="fas fa-arrow-left"></i> Back to Library
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        let currentFontSize = 1.125; // rem
+        let isDarkMode = false;
+        let currentChapterId = null;
+        let currentPageInChapter = 1;
+        let currentBook = null;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadBook();
+            
+            // Update progress on scroll
+            window.addEventListener('scroll', updateReadingProgress);
+        });
+
+        function loadBook() {
+            // Get book ID from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const bookId = parseInt(urlParams.get('id'));
+
+            if (!bookId) {
+                alert('Book not found');
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // Get books from localStorage
+            const savedBooks = localStorage.getItem('books');
+            let books = [];
+            
+            if (savedBooks) {
+                books = JSON.parse(savedBooks);
+            } else if (window.ArchazzBook && window.ArchazzBook.books) {
+                books = window.ArchazzBook.books;
+            }
+
+            const book = books.find(b => b.id === bookId);
+
+            if (!book) {
+                alert('Book not found');
+                window.location.href = 'index.html';
+                return;
+            }
+
+            currentBook = book;
+
+            // Display book info
+            document.getElementById('reader-book-title').textContent = book.title;
+            document.getElementById('reader-book-author').textContent = book.author;
+            document.title = `${book.title} - ArchazzBook`;
+
+            // Check if book has chapter-based structure
+            if (book.chapters && book.chapters.length > 0) {
+                // New chapter-based format
+                loadChapterBasedBook();
+            } else {
+                // Old single-story format - convert for backwards compatibility
+                loadLegacyBook();
+            }
+        }
+
+        function loadChapterBasedBook() {
+            // Start with first chapter
+            currentChapterId = currentBook.chapters[0].id;
+            
+            // Add chapter selector if multiple chapters
+            if (currentBook.chapters.length > 1) {
+                addChapterSelector();
+            }
+            
+            displayChapter(currentChapterId);
+        }
+
+        function addChapterSelector() {
+            const headerContent = document.querySelector('.reader-header-content');
+            const bookInfo = headerContent.querySelector('.book-info-header');
+            
+            // Create chapter selector
+            const chapterSelectorDiv = document.createElement('div');
+            chapterSelectorDiv.style.cssText = 'margin-top: 0.5rem;';
+            
+            const select = document.createElement('select');
+            select.style.cssText = `
+                padding: 0.5rem 1rem;
+                border: 2px solid var(--primary);
+                border-radius: var(--radius-md);
+                background: white;
+                color: var(--dark);
+                font-weight: 600;
+                cursor: pointer;
+            `;
+            
+            currentBook.chapters.forEach(chapter => {
+                const option = document.createElement('option');
+                option.value = chapter.id;
+                option.textContent = chapter.title;
+                select.appendChild(option);
+            });
+            
+            select.addEventListener('change', function() {
+                currentChapterId = parseInt(this.value);
+                displayChapter(currentChapterId);
+            });
+            
+            chapterSelectorDiv.appendChild(select);
+            bookInfo.appendChild(chapterSelectorDiv);
+        }
+
+        function displayChapter(chapterId) {
+            const chapter = currentBook.chapters.find(c => c.id === chapterId);
+            if (!chapter) return;
+            
+            currentPageInChapter = 1;
+            
+            // Display content
+            displayPage(1, chapter);
+            
+            // Update chapter selector if exists
+            const selector = document.querySelector('select');
+            if (selector) {
+                selector.value = chapterId;
+            }
+        }
+
+        function displayPage(pageNumber, chapter) {
+            if (!chapter) {
+                chapter = currentBook.chapters.find(c => c.id === currentChapterId);
+            }
+            
+            currentPageInChapter = pageNumber;
+            
+            const page = chapter.pages[pageNumber - 1];
+            if (!page) return;
+            
+            // Display content
+            const storyContent = document.getElementById('story-content');
+            storyContent.innerHTML = `<h2>${chapter.title}</h2>` + page.content;
+            
+            // Update page info
+            const totalPagesInChapter = chapter.pages.length;
+            document.getElementById('page-info').textContent = `Page ${currentPageInChapter} of ${totalPagesInChapter}`;
+            
+            // Show/hide pagination controls
+            if (totalPagesInChapter > 1) {
+                document.getElementById('pagination-controls').style.display = 'flex';
+                document.getElementById('current-page').textContent = currentPageInChapter;
+                document.getElementById('total-pages').textContent = totalPagesInChapter;
+                
+                // Update button states
+                const prevBtn = document.getElementById('prev-page-btn');
+                const nextBtn = document.getElementById('next-page-btn');
+                
+                prevBtn.disabled = currentPageInChapter === 1;
+                nextBtn.disabled = currentPageInChapter === totalPagesInChapter;
+            } else {
+                document.getElementById('pagination-controls').style.display = 'none';
+            }
+            
+            // Update progress bar
+            updateProgressBar();
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function loadLegacyBook() {
+            // Old format - single story with page count
+            const totalPages = currentBook.pages || 1;
+            
+            // Parse story into paragraphs
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = currentBook.story;
+            
+            // Get all paragraphs and headings
+            const elements = tempDiv.querySelectorAll('p, h1, h2, h3, h4, h5, h6');
+            const allParagraphs = Array.from(elements).map(el => el.outerHTML);
+
+            // Show pagination if more than 1 page
+            if (totalPages > 1) {
+                document.getElementById('pagination-controls').style.display = 'flex';
+            }
+
+            // Display first page
+            displayLegacyPage(1, allParagraphs, totalPages);
+        }
+
+        function displayLegacyPage(pageNumber, allParagraphs, totalPages) {
+            // Calculate paragraphs per page
+            const paragraphsPerPage = Math.ceil(allParagraphs.length / totalPages);
+            const startIdx = (pageNumber - 1) * paragraphsPerPage;
+            const endIdx = Math.min(startIdx + paragraphsPerPage, allParagraphs.length);
+            
+            // Get paragraphs for current page
+            const pageParagraphs = allParagraphs.slice(startIdx, endIdx);
+            
+            // Display content
+            const storyContent = document.getElementById('story-content');
+            storyContent.innerHTML = pageParagraphs.join('');
+            
+            // Update page info
+            document.getElementById('page-info').textContent = `Page ${pageNumber} of ${totalPages}`;
+            document.getElementById('current-page').textContent = pageNumber;
+            document.getElementById('total-pages').textContent = totalPages;
+            
+            // Update button states
+            const prevBtn = document.getElementById('prev-page-btn');
+            const nextBtn = document.getElementById('next-page-btn');
+            
+            prevBtn.disabled = pageNumber === 1;
+            nextBtn.disabled = pageNumber === totalPages;
+            
+            // Update progress bar
+            const progress = (pageNumber / totalPages) * 100;
+            document.getElementById('reading-progress').style.width = `${progress}%`;
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function nextPage() {
+            if (!currentBook.chapters) {
+                // Legacy format - handle differently
+                return;
+            }
+            
+            const chapter = currentBook.chapters.find(c => c.id === currentChapterId);
+            if (currentPageInChapter < chapter.pages.length) {
+                displayPage(currentPageInChapter + 1, chapter);
+            } else {
+                // Last page of chapter - go to next chapter if exists
+                const currentChapterIndex = currentBook.chapters.findIndex(c => c.id === currentChapterId);
+                if (currentChapterIndex < currentBook.chapters.length - 1) {
+                    currentChapterId = currentBook.chapters[currentChapterIndex + 1].id;
+                    displayChapter(currentChapterId);
+                    showNotification('Next chapter');
+                }
+            }
+        }
+
+        function previousPage() {
+            if (!currentBook.chapters) {
+                // Legacy format - handle differently
+                return;
+            }
+            
+            const chapter = currentBook.chapters.find(c => c.id === currentChapterId);
+            if (currentPageInChapter > 1) {
+                displayPage(currentPageInChapter - 1, chapter);
+            } else {
+                // First page of chapter - go to previous chapter if exists
+                const currentChapterIndex = currentBook.chapters.findIndex(c => c.id === currentChapterId);
+                if (currentChapterIndex > 0) {
+                    const prevChapter = currentBook.chapters[currentChapterIndex - 1];
+                    currentChapterId = prevChapter.id;
+                    currentPageInChapter = prevChapter.pages.length; // Go to last page of previous chapter
+                    displayPage(currentPageInChapter, prevChapter);
+                    showNotification('Previous chapter');
+                }
+            }
+        }
+
+        function updateProgressBar() {
+            if (!currentBook.chapters) return;
+            
+            // Calculate overall progress across all chapters
+            let totalPages = 0;
+            let pagesRead = 0;
+            
+            for (let i = 0; i < currentBook.chapters.length; i++) {
+                const chapter = currentBook.chapters[i];
+                totalPages += chapter.pages.length;
+                
+                if (chapter.id === currentChapterId) {
+                    pagesRead += currentPageInChapter;
+                    break;
+                } else {
+                    pagesRead += chapter.pages.length;
+                }
+            }
+            
+            const progress = (pagesRead / totalPages) * 100;
+            document.getElementById('reading-progress').style.width = `${progress}%`;
+        }
+
+        function updateReadingProgress() {
+            // Called on scroll - use stored progress
+            updateProgressBar();
+        }
+
+        function increaseFontSize() {
+            currentFontSize += 0.125;
+            if (currentFontSize > 2) currentFontSize = 2;
+            updateFontSize();
+        }
+
+        function decreaseFontSize() {
+            currentFontSize -= 0.125;
+            if (currentFontSize < 0.875) currentFontSize = 0.875;
+            updateFontSize();
+        }
+
+        function resetFontSize() {
+            currentFontSize = 1.125;
+            updateFontSize();
+        }
+
+        function updateFontSize() {
+            document.getElementById('reader-paper').style.fontSize = `${currentFontSize}rem`;
+        }
+
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            const paper = document.getElementById('reader-paper');
+            const themeBtn = document.getElementById('theme-btn');
+            
+            if (isDarkMode) {
+                paper.style.background = '#1E293B';
+                paper.style.color = '#E2E8F0';
+                themeBtn.innerHTML = '<i class="fas fa-sun"></i>';
+            } else {
+                paper.style.background = 'white';
+                paper.style.color = '#1E293B';
+                themeBtn.innerHTML = '<i class="fas fa-moon"></i>';
+            }
+        }
+
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                bottom: 2rem;
+                right: 2rem;
+                background: linear-gradient(135deg, #667EEA 0%, #764BA2 100%);
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: 1rem;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+                z-index: 3000;
+                animation: slideUp 0.3s ease;
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'fadeOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 2000);
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowLeft') {
+                previousPage();
+            } else if (e.key === 'ArrowRight') {
+                nextPage();
+            }
+        });
+    </script>
+</body>
+</html>
