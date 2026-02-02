@@ -166,16 +166,30 @@
         }
 
         .page-editor .ql-toolbar {
-            position: sticky;
-            top: 160px;
             background: white;
             border: 2px solid var(--gray-lighter);
             border-radius: var(--radius-md);
-            z-index: 40;
-            margin-top: 1rem;
+            z-index: 10;
+            margin-top: 4rem;
             margin-bottom: 1.5rem;
             white-space: nowrap;
             overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .page-editor .ql-toolbar::-webkit-scrollbar {
+            height: 6px;
+        }
+        
+        .page-editor .ql-toolbar::-webkit-scrollbar-track {
+            background: var(--gray-lighter);
+            border-radius: 3px;
+        }
+        
+        .page-editor .ql-toolbar::-webkit-scrollbar-thumb {
+            background: var(--gray);
+            border-radius: 3px;
         }
 
         .add-page-btn {
@@ -373,6 +387,7 @@
                 padding: 2rem 1.25rem;
                 min-height: auto;
                 max-width: 100%;
+                width: 100%;
             }
             
             .page-editor .ql-container {
@@ -385,10 +400,12 @@
             }
             
             .page-editor .ql-toolbar {
-                top: 140px;
-                position: sticky;
-                margin-top: 0.5rem;
-                margin-bottom: 1rem;
+                position: static !important;
+                margin-top: 4rem;
+                margin-bottom: 1.5rem;
+                overflow-x: auto;
+                overflow-y: hidden;
+                -webkit-overflow-scrolling: touch;
             }
             
             .page-header {
@@ -410,6 +427,7 @@
             .add-page-btn {
                 padding: 1.5rem;
                 font-size: 1rem;
+                width: 100%;
             }
             
             .sidebar-card {
@@ -441,6 +459,7 @@
             .writer-page {
                 padding: 1.5rem 1rem;
                 border-radius: var(--radius-md);
+                width: 100%;
             }
             
             .book-title-input input {
@@ -482,13 +501,21 @@
             }
             
             .page-editor .ql-toolbar {
-                top: 130px;
+                position: static !important;
+                top: auto !important;
+                margin-top: 4.5rem;
+                margin-bottom: 1.25rem;
                 border-radius: var(--radius-sm);
+                padding: 0.5rem;
             }
             
-            /* Make toolbar more compact */
+            /* Make toolbar more compact and scrollable */
             .page-editor .ql-toolbar .ql-formats {
-                margin-right: 10px;
+                margin-right: 8px;
+            }
+            
+            .page-editor .ql-toolbar button {
+                padding: 4px;
             }
             
             .page-header {
@@ -511,6 +538,7 @@
             .add-page-btn {
                 padding: 1.25rem;
                 font-size: 0.9375rem;
+                width: 100%;
             }
             
             .pages-container {
