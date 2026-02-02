@@ -100,38 +100,94 @@ function loadDashboardBooks() {
     tbody.innerHTML = '';
     
     if (books.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="5" style="text-align: center; padding: 3rem; color: var(--gray);">
+        // Check if mobile
+        const isMobile = window.innerWidth <= 768;
+        
+        if (isMobile) {
+            tbody.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: var(--gray);">
                     <i class="fas fa-book" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
                     <p>No books yet. Start by adding your first book!</p>
-                </td>
-            </tr>
-        `;
+                </div>
+            `;
+        } else {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 3rem; color: var(--gray);">
+                        <i class="fas fa-book" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
+                        <p>No books yet. Start by adding your first book!</p>
+                    </td>
+                </tr>
+            `;
+        }
         return;
     }
     
+    // Check if mobile view
+    const isMobile = window.innerWidth <= 768;
+    
     books.forEach(book => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td><img src="${book.cover}" alt="${book.title}" class="book-thumbnail"></td>
-            <td><strong>${book.title}</strong></td>
-            <td>${book.pages} pages</td>
-            <td>${formatDate(book.date)}</td>
-            <td>
-                <div class="action-buttons">
-                    <button class="btn btn-icon btn-outline" onclick="window.location.href='writer.html?id=${book.id}'" title="Edit">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn btn-icon btn-danger" onclick="deleteBook(${book.id})" title="Delete">
-                        <i class="fas fa-trash"></i>
-                    </button>
+        if (isMobile) {
+            // Mobile card layout
+            const card = document.createElement('div');
+            card.className = 'book-mobile-card';
+            card.innerHTML = `
+                <img src="${book.cover}" alt="${book.title}">
+                <div class="book-mobile-info">
+                    <h3>${book.title}</h3>
+                    <div class="book-mobile-meta">
+                        <span><i class="fas fa-book"></i> ${book.pages} pages</span>
+                        <span><i class="fas fa-calendar"></i> ${formatDate(book.date)}</span>
+                    </div>
+                    <div class="book-mobile-actions">
+                        <button class="btn btn-outline" onclick="window.location.href='writer.html?id=${book.id}'" style="flex: 1;">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteBook(${book.id})" style="flex: 1;">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
                 </div>
-            </td>
-        `;
-        tbody.appendChild(row);
+            `;
+            tbody.appendChild(card);
+        } else {
+            // Desktop table layout
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><img src="${book.cover}" alt="${book.title}" class="book-thumbnail"></td>
+                <td><strong>${book.title}</strong></td>
+                <td>${book.pages} pages</td>
+                <td>${formatDate(book.date)}</td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn btn-icon btn-outline" onclick="window.location.href='writer.html?id=${book.id}'" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-icon btn-danger" onclick="deleteBook(${book.id})" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(row);
+        }
     });
 }
+
+// Re-render on window resize
+window.addEventListener('resize', function() {
+    const currentWidth = window.innerWidth;
+    // Only reload if crossing the 768px threshold
+    if ((currentWidth <= 768 && !window.lastMobileState) || 
+        (currentWidth > 768 && window.lastMobileState)) {
+        window.lastMobileState = currentWidth <= 768;
+        loadDashboardBooks();
+    }
+});
+
+// Set initial state
+window.lastMobileState = window.innerWidth <= 768;
+
 
 function handleBookSubmit(event) {
     event.preventDefault();
