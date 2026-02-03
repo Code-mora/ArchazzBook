@@ -340,6 +340,7 @@ function initializePageEditor(pageId, initialContent) {
                 container: [
                     [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
                     [{ 'font': ['times-new-roman', 'arial', 'georgia', 'courier', 'verdana'] }],
+                    [{ 'size': ['small', false, 'large', 'huge'] }],
                     ['bold', 'italic', 'underline', 'strike'],
                     [{ 'color': [] }, { 'background': [] }],
                     [{ 'align': [] }],
