@@ -86,36 +86,23 @@
             padding-top: 2rem;
         }
 
-        /* A4 Paper Size - Remove card for better toolbar experience */
-        .writer-page {
-            background: transparent;
-            border-radius: 0;
-            box-shadow: none;
-            padding: 0;
+        /* Page Wrapper - contains toolbar + card as siblings */
+        .page-wrapper {
             max-width: 21cm;
-            min-height: 29.7cm;
             margin: 0 auto;
             position: relative;
+            padding-top: 2rem;
         }
         
-        /* Actual content wrapper */
-        .page-editor-wrapper {
-            background: white;
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-md);
-            padding: 3rem 2.5rem;
-            margin-top: 0.5rem;
-        }
-
-
-
-        .page-header {
+        /* Header Info - floating above */
+        .page-header-info {
             position: absolute;
-            top: 1rem;
-            right: 1rem;
+            top: 0;
+            right: 0;
             display: flex;
             gap: 0.5rem;
             align-items: center;
+            z-index: 50;
         }
 
         .page-number-badge {
@@ -149,70 +136,71 @@
             align-items: center;
             justify-content: center;
         }
-
-        /* Quill Editor in A4 context */
+        
+        /* TOOLBAR AREA - OUTSIDE CARD! */
+        .page-toolbar-area {
+            margin-top: 3.5rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+            z-index: 100;
+        }
+        
+        /* Toolbar styling */
+        .ql-toolbar.ql-snow {
+            background: white;
+            border: 2px solid var(--gray-lighter);
+            border-radius: var(--radius-md);
+            padding: 0.75rem;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        /* CRITICAL: Dropdowns are FREE - no parent constraints */
+        .ql-toolbar .ql-picker-options {
+            z-index: 9999 !important;
+        }
+        
+        /* Content Card - the white A4 card */
+        .page-content-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-xl);
+            padding: 3rem 2.5rem;
+            min-height: 29.7cm;
+            transition: var(--transition-normal);
+        }
+        
+        .page-content-card:hover {
+            box-shadow: var(--shadow-2xl);
+        }
+        
+        /* Editor content styling */
         .page-editor {
             font-family: 'Times New Roman', Times, serif;
-            font-size: 1.125rem;
-            line-height: 1.8;
-            color: var(--dark-light);
         }
-
-        .page-editor .ql-container {
-            border: none;
+        
+        .ql-container {
+            border: none !important;
             min-height: 800px;
             font-family: 'Times New Roman', Times, serif;
         }
 
-        .page-editor .ql-editor {
+        .ql-editor {
             min-height: 800px;
             padding: 0;
             font-size: 1.125rem;
             line-height: 1.8;
         }
-
-        .page-editor .ql-toolbar {
-            background: white;
-            border: 2px solid var(--gray-lighter);
-            border-radius: var(--radius-md);
-            position: sticky;
-            top: 140px;
-            z-index: 100;
-            margin-bottom: 1.5rem;
-            white-space: nowrap;
-            overflow-x: auto;
-            overflow-y: visible;
-            -webkit-overflow-scrolling: touch;
-            box-shadow: var(--shadow-sm);
-        }
         
-        /* Make sure Quill dropdowns appear above everything */
-        .page-editor .ql-toolbar .ql-picker-options {
-            z-index: 150 !important;
-            max-height: none !important;
-        }
-        
-        .page-editor .ql-snow .ql-picker.ql-expanded .ql-picker-options {
-            z-index: 150 !important;
-            max-height: none !important;
-        }
-        
-        /* Ensure font picker shows all options without scrolling */
-        .page-editor .ql-snow .ql-picker.ql-font .ql-picker-options {
-            max-height: 400px !important;
-            overflow-y: auto;
-        }
-        
-        .page-editor .ql-toolbar::-webkit-scrollbar {
+        .ql-toolbar::-webkit-scrollbar {
             height: 6px;
         }
         
-        .page-editor .ql-toolbar::-webkit-scrollbar-track {
+        .ql-toolbar::-webkit-scrollbar-track {
             background: var(--gray-lighter);
             border-radius: 3px;
         }
         
-        .page-editor .ql-toolbar::-webkit-scrollbar-thumb {
+        .ql-toolbar::-webkit-scrollbar-thumb {
             background: var(--gray);
             border-radius: 3px;
         }
@@ -419,16 +407,12 @@
                 padding: 0 0.75rem 3rem;
             }
 
-            .writer-page {
-                padding: 0;
-                min-height: auto;
-                max-width: 100%;
-                width: 100%;
+            .page-wrapper {
+                padding: 2rem 1.25rem;
             }
             
-            .page-editor-wrapper {
-                padding: 1.5rem 1rem;
-                border-radius: var(--radius-md);
+            .page-content-card {
+                padding: 2rem 1.25rem;
             }
             
             .page-editor .ql-container {
@@ -440,24 +424,29 @@
                 font-size: 1rem;
             }
             
+            /* MOBILE ONLY: Static toolbar with super high z-index for dropdowns */
             .page-editor .ql-toolbar {
-                position: sticky !important;
-                top: 70px;
-                z-index: 100;
+                position: static !important;
+                margin-top: 4rem;
                 margin-bottom: 1.5rem;
                 overflow-x: auto;
-                overflow-y: visible;
+                overflow-y: visible !important;
                 -webkit-overflow-scrolling: touch;
             }
             
-            /* Ensure dropdowns are visible on mobile */
+            /* MOBILE: Ensure dropdowns are ALWAYS visible */
             .page-editor .ql-toolbar .ql-picker-options {
-                z-index: 150 !important;
+                z-index: 9999 !important;
                 max-height: none !important;
+                position: absolute !important;
+            }
+            
+            .page-editor .ql-snow .ql-picker.ql-expanded .ql-picker-options {
+                z-index: 9999 !important;
             }
             
             .page-editor .ql-snow .ql-picker.ql-font .ql-picker-options {
-                max-height: 300px !important;
+                max-height: 350px !important;
                 overflow-y: auto;
             }
             
@@ -513,14 +502,13 @@
                 padding: 0 0.5rem 2rem;
             }
             
-            .writer-page {
-                padding: 0;
-                width: 100%;
+            .page-wrapper {
+                padding: 1.5rem 1rem;
             }
             
-            .page-editor-wrapper {
-                padding: 1.25rem 0.875rem;
-                border-radius: var(--radius-sm);
+            .page-content-card {
+                padding: 1.5rem 1rem;
+                border-radius: var(--radius-md);
             }
             
             .book-title-input input {
@@ -563,29 +551,30 @@
                 line-height: 1.7;
             }
             
+            /* SMALLEST MOBILE: Static toolbar, extreme z-index */
             .page-editor .ql-toolbar {
-                position: sticky !important;
-                top: 60px;
-                z-index: 100;
-                margin-bottom: 1rem;
+                position: static !important;
+                top: auto !important;
+                margin-top: 4.5rem;
+                margin-bottom: 1.25rem;
                 border-radius: var(--radius-sm);
                 padding: 0.5rem;
                 overflow-x: auto;
-                overflow-y: visible;
+                overflow-y: visible !important;
             }
             
-            /* Ensure dropdowns are visible on smallest mobile */
+            /* SMALLEST MOBILE: Dropdowns MUST be visible */
             .page-editor .ql-toolbar .ql-picker-options {
-                z-index: 150 !important;
+                z-index: 9999 !important;
                 max-height: none !important;
+                position: absolute !important;
             }
             
             .page-editor .ql-snow .ql-picker.ql-font .ql-picker-options {
-                max-height: 250px !important;
+                max-height: 300px !important;
                 overflow-y: auto;
             }
             
-            /* Make toolbar more compact and scrollable */
             .page-editor .ql-toolbar .ql-formats {
                 margin-right: 8px;
             }
