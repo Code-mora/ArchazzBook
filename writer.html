@@ -385,22 +385,39 @@
                 font-size: 1rem;
                 padding: 0.75rem 0.875rem;
             }
+
+            .book-title-input select {
+                font-size: 0.9375rem !important;
+                padding: 0.625rem 0.75rem !important;
+                max-width: 100%;
+            }
             
             .writer-actions {
                 width: 100%;
                 flex-wrap: wrap;
+                gap: 0.5rem;
             }
             
             .chapter-selector {
                 flex: 1;
-                min-width: 150px;
+                min-width: 120px;
                 padding: 0.625rem 0.875rem;
                 font-size: 0.9375rem;
             }
             
             .writer-actions .btn {
-                padding: 0.625rem 1rem;
+                padding: 0.625rem 0.875rem;
                 font-size: 0.9375rem;
+                flex: 1;
+                min-width: 80px;
+            }
+
+            #mobile-cover-btn {
+                order: 3;
+            }
+
+            .writer-actions .btn-primary {
+                order: 4;
             }
             
             .writer-content {
@@ -728,6 +745,9 @@
                     <button class="btn btn-outline" onclick="newChapter()">
                         <i class="fas fa-plus"></i> New Chapter
                     </button>
+                    <button class="btn btn-outline" id="mobile-cover-btn" onclick="uploadCover()" style="display: none; flex: 1;">
+                        <i class="fas fa-image"></i> Cover
+                    </button>
                     <button class="btn btn-primary" onclick="saveBook()">
                         <i class="fas fa-save"></i> Save & Publish
                     </button>
@@ -772,6 +792,14 @@
                     <button class="btn btn-outline btn-full" onclick="newChapter()" style="margin-top: 1rem;">
                         <i class="fas fa-plus"></i> Add Chapter
                     </button>
+                </div>
+
+                <!-- Book Cover Preview -->
+                <div class="sidebar-card" id="cover-display-card" style="display: none;">
+                    <h3><i class="fas fa-image"></i> Book Cover</h3>
+                    <div style="text-align: center;">
+                        <img id="sidebar-cover-preview" src="" alt="Book cover" style="max-width: 100%; border-radius: var(--radius-md); box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    </div>
                 </div>
 
                 <!-- Quick Actions -->

@@ -164,6 +164,34 @@ function loadExistingBook(bookId) {
   if (currentBook.genre) {
     document.getElementById('book-genre').value = currentBook.genre;
   }
+
+  // Load and display existing cover
+  if (currentBook.cover) {
+    // Display in modal (for upload flow)
+    document.getElementById('preview-img').src = currentBook.cover;
+    document.getElementById('cover-preview').style.display = 'flex';
+    
+    // Display in sidebar
+    document.getElementById('sidebar-cover-preview').src = currentBook.cover;
+    document.getElementById('cover-display-card').style.display = 'block';
+    
+    // Update upload UI to show cover is already uploaded
+    const uploadDiv = document.getElementById('cover-upload');
+    if (uploadDiv) {
+      uploadDiv.innerHTML = `
+        <i class="fas fa-check-circle" style="color: #10B981; font-size: 3rem;"></i>
+        <p><strong>Cover already uploaded</strong></p>
+        <p style="color: var(--gray); font-size: 0.875rem;">Click to change</p>
+      `;
+    }
+  }
+
+  console.log('✏️ Edit mode loaded for book:', currentBook.title);
+
+  // Show edit mode notification for mobile
+  if (window.innerWidth <= 768) {
+    showNotification('📝 Editing: ' + currentBook.title);
+  }
 }
 
 // =============================
@@ -198,6 +226,21 @@ function initializeWriter() {
       currentChapterId = parseInt(e.target.value);
       renderCurrentChapter();
     });
+
+  // Show mobile cover button on small screens
+  const mobileCoverBtn = document.getElementById('mobile-cover-btn');
+  if (mobileCoverBtn) {
+    if (window.innerWidth <= 768) {
+      mobileCoverBtn.style.display = 'flex';
+    }
+  }
+
+  // Update mobile button visibility on resize
+  window.addEventListener('resize', function () {
+    if (mobileCoverBtn) {
+      mobileCoverBtn.style.display = window.innerWidth <= 768 ? 'flex' : 'none';
+    }
+  });
 }
 
 // =============================
@@ -711,9 +754,13 @@ function handleCoverUpload(event) {
   reader.onload = function (e) {
     currentBook.cover = e.target.result;
 
-    // Show preview
+    // Show preview in modal
     document.getElementById('preview-img').src = currentBook.cover;
     document.getElementById('cover-preview').style.display = 'flex';
+
+    // Show preview in sidebar
+    document.getElementById('sidebar-cover-preview').src = currentBook.cover;
+    document.getElementById('cover-display-card').style.display = 'block';
 
     // Update upload UI
     const uploadDiv = document.getElementById('cover-upload');
