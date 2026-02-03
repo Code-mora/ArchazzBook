@@ -315,8 +315,10 @@ function createPageElement(page, pageNumber, totalPages) {
                 <i class="fas fa-trash"></i>
             </button>` : ''}
         </div>
-        <div class="page-editor" id="editor-container-${page.id}">
-            <div id="editor-${page.id}"></div>
+        <div class="page-editor-wrapper">
+            <div class="page-editor" id="editor-container-${page.id}">
+                <div id="editor-${page.id}"></div>
+            </div>
         </div>
     `;
     
