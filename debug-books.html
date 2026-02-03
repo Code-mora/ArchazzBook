@@ -222,6 +222,8 @@
         html +=
           '<button class="btn-primary" onclick="exportBooks()">📥 Export Books (JSON)</button>';
         html +=
+          '<button class="btn-success" onclick="importBooks()">📤 Import Books (JSON)</button>';
+        html +=
           '<button class="btn-success" onclick="refreshPage()">🔄 Refresh</button>';
         html +=
           '<button class="btn-danger" onclick="clearAllBooks()">🗑️ Clear All Books</button>';
@@ -249,6 +251,56 @@
         link.href = url;
         link.download = 'archazz-books-backup.json';
         link.click();
+      }
+
+      function importBooks() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        
+        input.onchange = function(e) {
+          const file = e.target.files[0];
+          if (!file) return;
+          
+          const reader = new FileReader();
+          reader.onload = function(event) {
+            try {
+              const importedData = JSON.parse(event.target.result);
+              
+              if (!Array.isArray(importedData)) {
+                alert('❌ Invalid file format. Must be a JSON array of books.');
+                return;
+              }
+              
+              const currentBooks = localStorage.getItem('books');
+              const currentData = currentBooks ? JSON.parse(currentBooks) : [];
+              
+              // Merge imported books with existing books
+              // If book ID exists, update it; otherwise add new
+              importedData.forEach(importedBook => {
+                const existingIndex = currentData.findIndex(b => b.id === importedBook.id);
+                if (existingIndex >= 0) {
+                  currentData[existingIndex] = importedBook;
+                  console.log('✏️ Updated book:', importedBook.title);
+                } else {
+                  currentData.push(importedBook);
+                  console.log('➕ Added new book:', importedBook.title);
+                }
+              });
+              
+              // Save merged data
+              localStorage.setItem('books', JSON.stringify(currentData));
+              
+              alert('✅ Successfully imported ' + importedData.length + ' book(s)!\n\nTotal books now: ' + currentData.length);
+              location.reload();
+            } catch (error) {
+              alert('❌ Error reading file: ' + error.message);
+            }
+          };
+          reader.readAsText(file);
+        };
+        
+        input.click();
       }
 
       function refreshPage() {
