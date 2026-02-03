@@ -120,6 +120,11 @@ function loadExistingBook(bookId) {
     }
     
     document.getElementById('book-title').value = currentBook.title;
+    
+    // Load genre if exists
+    if (currentBook.genre) {
+        document.getElementById('book-genre').value = currentBook.genre;
+    }
 }
 
 // =============================
@@ -561,6 +566,7 @@ function saveBook() {
         id: currentBook.id || Date.now(),
         title: currentBook.title,
         author: currentBook.author,
+        genre: document.getElementById('book-genre').value || 'other',
         date: currentBook.date || new Date().toISOString().split('T')[0],
         pages: totalPages,
         // Generate preview from first chapter
@@ -586,6 +592,10 @@ function saveBook() {
     
     // Save to localStorage
     localStorage.setItem('books', JSON.stringify(books));
+    
+    // Debug: log saved book
+    console.log('Book saved:', bookData);
+    console.log('Total books in storage:', books.length);
     
     // Show success
     showNotification('Book saved successfully!');

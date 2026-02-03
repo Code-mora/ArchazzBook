@@ -96,6 +96,10 @@ function loadDashboardBooks() {
         localStorage.setItem('books', JSON.stringify(books));
     }
     
+    // Debug: log books being loaded
+    console.log('Dashboard: Loading books:', books.length);
+    console.log('Books:', books);
+    
     const tbody = document.getElementById('books-table-body');
     tbody.innerHTML = '';
     
