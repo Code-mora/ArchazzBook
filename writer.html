@@ -169,13 +169,23 @@
             background: white;
             border: 2px solid var(--gray-lighter);
             border-radius: var(--radius-md);
-            z-index: 10;
+            position: relative;
+            z-index: 100;
             margin-top: 4rem;
             margin-bottom: 1.5rem;
             white-space: nowrap;
             overflow-x: auto;
-            overflow-y: hidden;
+            overflow-y: visible;
             -webkit-overflow-scrolling: touch;
+        }
+        
+        /* Make sure Quill dropdowns appear above toolbar */
+        .page-editor .ql-toolbar .ql-picker-options {
+            z-index: 101 !important;
+        }
+        
+        .page-editor .ql-snow .ql-picker.ql-expanded .ql-picker-options {
+            z-index: 101 !important;
         }
         
         .page-editor .ql-toolbar::-webkit-scrollbar {
@@ -330,6 +340,12 @@
             .writer-sidebar {
                 position: static;
                 order: 2;
+                width: 100%;
+            }
+            
+            .sidebar-card {
+                width: 100%;
+                max-width: 100%;
             }
             
             .pages-container {
@@ -400,12 +416,18 @@
             }
             
             .page-editor .ql-toolbar {
-                position: static !important;
+                position: relative !important;
+                z-index: 100;
                 margin-top: 4rem;
                 margin-bottom: 1.5rem;
                 overflow-x: auto;
-                overflow-y: hidden;
+                overflow-y: visible;
                 -webkit-overflow-scrolling: touch;
+            }
+            
+            /* Ensure dropdowns are visible on mobile */
+            .page-editor .ql-toolbar .ql-picker-options {
+                z-index: 101 !important;
             }
             
             .page-header {
@@ -432,6 +454,10 @@
             
             .sidebar-card {
                 padding: 1.25rem;
+                width: 100%;
+                max-width: 100%;
+                margin-left: 0;
+                margin-right: 0;
             }
             
             .sidebar-card h3 {
@@ -501,12 +527,20 @@
             }
             
             .page-editor .ql-toolbar {
-                position: static !important;
+                position: relative !important;
+                z-index: 100;
                 top: auto !important;
                 margin-top: 4.5rem;
                 margin-bottom: 1.25rem;
                 border-radius: var(--radius-sm);
                 padding: 0.5rem;
+                overflow-x: auto;
+                overflow-y: visible;
+            }
+            
+            /* Ensure dropdowns are visible on smallest mobile */
+            .page-editor .ql-toolbar .ql-picker-options {
+                z-index: 101 !important;
             }
             
             /* Make toolbar more compact and scrollable */
@@ -549,6 +583,10 @@
             .sidebar-card {
                 padding: 1rem;
                 margin-bottom: 1rem;
+                width: 100%;
+                max-width: 100%;
+                margin-left: 0;
+                margin-right: 0;
             }
             
             .sidebar-card h3 {
