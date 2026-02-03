@@ -8,25 +8,65 @@ let books = [];
 
 // User authentication state
 let currentUser = null;
-const AUTHOR_EMAIL = "wazz"; // Author username
-const AUTHOR_PASSWORD = "wazzhere"; // Author password
+const AUTHOR_EMAIL = 'wazz'; // Author username
+const AUTHOR_PASSWORD = 'wazzhere'; // Author password
+
+// =============================
+// LOCALSTORAGE UTILITIES
+// =============================
+
+// Get books from localStorage with fallback
+function getBooksFromStorage() {
+  try {
+    const savedBooks = localStorage.getItem('books');
+    if (savedBooks) {
+      const parsed = JSON.parse(savedBooks);
+      console.log('📚 Retrieved ' + parsed.length + ' books from localStorage');
+      return parsed;
+    }
+  } catch (e) {
+    console.error('❌ Error reading books from localStorage:', e);
+  }
+  return [];
+}
+
+// Save books to localStorage with verification
+function saveBooksToStorage(booksData) {
+  try {
+    localStorage.setItem('books', JSON.stringify(booksData));
+    // Verify save
+    const verify = localStorage.getItem('books');
+    if (verify) {
+      console.log(
+        '✅ Successfully saved ' + booksData.length + ' books to localStorage',
+      );
+      return true;
+    } else {
+      console.error('❌ Verification failed - data may not have been saved');
+      return false;
+    }
+  } catch (e) {
+    console.error('❌ Error saving books to localStorage:', e);
+    return false;
+  }
+}
 
 // =============================
 // INITIALIZATION
 // =============================
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Check for logged in user
-    checkAuthState();
-    
-    // Load books
-    loadBooks();
-    
-    // Setup event listeners
-    setupEventListeners();
-    
-    // Generate about image
-    generateAboutImage();
+document.addEventListener('DOMContentLoaded', function () {
+  // Check for logged in user
+  checkAuthState();
+
+  // Load books
+  loadBooks();
+
+  // Setup event listeners
+  setupEventListeners();
+
+  // Generate about image
+  generateAboutImage();
 });
 
 // =============================
@@ -34,66 +74,66 @@ document.addEventListener('DOMContentLoaded', function() {
 // =============================
 
 function checkAuthState() {
-    const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
-        currentUser = JSON.parse(savedUser);
-        updateUIForLoggedInUser();
-    }
+  const savedUser = localStorage.getItem('currentUser');
+  if (savedUser) {
+    currentUser = JSON.parse(savedUser);
+    updateUIForLoggedInUser();
+  }
 }
 
 function handleLogin(event) {
-    event.preventDefault();
-    
-    const username = document.getElementById('login-username').value;
-    const password = document.getElementById('login-password').value;
-    
-    // Check if author
-    if (username === AUTHOR_EMAIL && password === AUTHOR_PASSWORD) {
-        currentUser = {
-            name: "Archazz",
-            email: username,
-            role: "author"
-        };
-        
-        localStorage.setItem('currentUser', JSON.stringify(currentUser));
-        updateUIForLoggedInUser();
-        closeModal('login-modal');
-        
-        // Show success message
-        showNotification('Welcome back, ' + currentUser.name + '!');
-        
-        // Redirect to dashboard
-        setTimeout(() => {
-            window.location.href = 'dashboard.html';
-        }, 1000);
-    } else {
-        // Invalid credentials
-        alert('Invalid author credentials. Please try again.');
-    }
+  event.preventDefault();
+
+  const username = document.getElementById('login-username').value;
+  const password = document.getElementById('login-password').value;
+
+  // Check if author
+  if (username === AUTHOR_EMAIL && password === AUTHOR_PASSWORD) {
+    currentUser = {
+      name: 'Archazz',
+      email: username,
+      role: 'author',
+    };
+
+    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    updateUIForLoggedInUser();
+    closeModal('login-modal');
+
+    // Show success message
+    showNotification('Welcome back, ' + currentUser.name + '!');
+
+    // Redirect to dashboard
+    setTimeout(() => {
+      window.location.href = 'dashboard.html';
+    }, 1000);
+  } else {
+    // Invalid credentials
+    alert('Invalid author credentials. Please try again.');
+  }
 }
 
 function logout() {
-    currentUser = null;
-    localStorage.removeItem('currentUser');
-    
-    // Update UI
-    document.getElementById('auth-buttons').style.display = 'flex';
-    document.getElementById('user-menu').style.display = 'none';
-    
-    showNotification('Logged out successfully');
+  currentUser = null;
+  localStorage.removeItem('currentUser');
+
+  // Update UI
+  document.getElementById('auth-buttons').style.display = 'flex';
+  document.getElementById('user-menu').style.display = 'none';
+
+  showNotification('Logged out successfully');
 }
 
 function updateUIForLoggedInUser() {
-    document.getElementById('auth-buttons').style.display = 'none';
-    document.getElementById('user-menu').style.display = 'flex';
-    document.getElementById('user-name').textContent = currentUser.name;
-    
-    // Show dashboard link for author
-    if (currentUser.role === 'author') {
-        const dashboardLink = document.getElementById('dashboard-link');
-        dashboardLink.style.display = 'flex';
-        dashboardLink.href = 'dashboard.html';
-    }
+  document.getElementById('auth-buttons').style.display = 'none';
+  document.getElementById('user-menu').style.display = 'flex';
+  document.getElementById('user-name').textContent = currentUser.name;
+
+  // Show dashboard link for author
+  if (currentUser.role === 'author') {
+    const dashboardLink = document.getElementById('dashboard-link');
+    dashboardLink.style.display = 'flex';
+    dashboardLink.href = 'dashboard.html';
+  }
 }
 
 // =============================
@@ -101,89 +141,89 @@ function updateUIForLoggedInUser() {
 // =============================
 
 function loadBooks() {
-    const booksGrid = document.getElementById('books-grid');
-    booksGrid.innerHTML = '';
-    
-    // Get books from localStorage (same as dashboard)
-    const savedBooks = localStorage.getItem('books');
-    const books = savedBooks ? JSON.parse(savedBooks) : [];
-    
-    // Update hero stats
-    updateHeroStats(books);
-    
-    // Show empty state if no books
-    if (books.length === 0) {
-        booksGrid.innerHTML = `
+  const booksGrid = document.getElementById('books-grid');
+  booksGrid.innerHTML = '';
+
+  // Get books from localStorage using robust utility
+  const savedBooks = getBooksFromStorage();
+  const books = savedBooks.length > 0 ? savedBooks : [];
+
+  // Update hero stats
+  updateHeroStats(books);
+
+  // Show empty state if no books
+  if (books.length === 0) {
+    booksGrid.innerHTML = `
             <div style="grid-column: 1/-1; text-align: center; padding: 4rem 2rem;">
                 <i class="fas fa-book" style="font-size: 4rem; color: var(--gray); margin-bottom: 1rem; display: block;"></i>
                 <h3 style="font-size: 1.5rem; color: var(--dark); margin-bottom: 0.5rem;">No Books Yet</h3>
                 <p style="color: var(--gray);">Books will appear here once the author uploads them.</p>
             </div>
         `;
-        return;
-    }
-    
-    books.forEach((book, index) => {
-        const bookCard = createBookCard(book);
-        bookCard.style.animationDelay = `${index * 0.1}s`;
-        bookCard.classList.add('fade-in');
-        booksGrid.appendChild(bookCard);
-    });
+    return;
+  }
+
+  books.forEach((book, index) => {
+    const bookCard = createBookCard(book);
+    bookCard.style.animationDelay = `${index * 0.1}s`;
+    bookCard.classList.add('fade-in');
+    booksGrid.appendChild(bookCard);
+  });
 }
 
 function updateHeroStats(books) {
-    // Update books count
-    const booksCount = document.getElementById('books-count');
-    if (booksCount) {
-        booksCount.textContent = books.length;
-    }
-    
-    // Calculate happy readers from views
-    let viewsData = localStorage.getItem('booksViews');
-    let totalReaders = 0;
-    
-    if (viewsData && books.length > 0) {
-        const views = JSON.parse(viewsData);
-        const totalViews = Object.values(views).reduce((sum, val) => sum + val, 0);
-        // Calculate readers as 35% of total views (realistic engagement rate)
-        totalReaders = Math.floor(totalViews * 0.35);
-    }
-    
-    // Update readers count with animation
-    const readersCount = document.getElementById('readers-count');
-    if (readersCount) {
-        animateNumber(readersCount, 0, totalReaders, 1000);
-    }
+  // Update books count
+  const booksCount = document.getElementById('books-count');
+  if (booksCount) {
+    booksCount.textContent = books.length;
+  }
+
+  // Calculate happy readers from views
+  let viewsData = localStorage.getItem('booksViews');
+  let totalReaders = 0;
+
+  if (viewsData && books.length > 0) {
+    const views = JSON.parse(viewsData);
+    const totalViews = Object.values(views).reduce((sum, val) => sum + val, 0);
+    // Calculate readers as 35% of total views (realistic engagement rate)
+    totalReaders = Math.floor(totalViews * 0.35);
+  }
+
+  // Update readers count with animation
+  const readersCount = document.getElementById('readers-count');
+  if (readersCount) {
+    animateNumber(readersCount, 0, totalReaders, 1000);
+  }
 }
 
 function animateNumber(element, from, to, duration) {
-    const start = Date.now();
-    const range = to - from;
-    
-    function update() {
-        const now = Date.now();
-        const progress = Math.min((now - start) / duration, 1);
-        const current = Math.floor(from + range * progress);
-        element.textContent = current.toLocaleString();
-        
-        if (progress < 1) {
-            requestAnimationFrame(update);
-        }
+  const start = Date.now();
+  const range = to - from;
+
+  function update() {
+    const now = Date.now();
+    const progress = Math.min((now - start) / duration, 1);
+    const current = Math.floor(from + range * progress);
+    element.textContent = current.toLocaleString();
+
+    if (progress < 1) {
+      requestAnimationFrame(update);
     }
-    
-    update();
+  }
+
+  update();
 }
 
 function createBookCard(book) {
-    const card = document.createElement('div');
-    card.className = 'book-card';
-    card.onclick = () => showBookDetails(book.id);
-    
-    // Store genre for filtering (default to 'other' if not set)
-    card.dataset.genre = (book.genre || 'other').toLowerCase();
-    card.dataset.title = book.title.toLowerCase();
-    
-    card.innerHTML = `
+  const card = document.createElement('div');
+  card.className = 'book-card';
+  card.onclick = () => showBookDetails(book.id);
+
+  // Store genre for filtering (default to 'other' if not set)
+  card.dataset.genre = (book.genre || 'other').toLowerCase();
+  card.dataset.title = book.title.toLowerCase();
+
+  card.innerHTML = `
         <div class="book-cover-container">
             <img src="${book.cover}" alt="${book.title}" loading="lazy">
         </div>
@@ -201,78 +241,84 @@ function createBookCard(book) {
             </div>
         </div>
     `;
-    
-    return card;
+
+  return card;
 }
 
 // Filter books by search query and genre
 function filterBooks() {
-    const searchQuery = document.getElementById('book-search').value.toLowerCase();
-    const selectedGenre = document.getElementById('genre-select').value.toLowerCase();
-    const bookCards = document.querySelectorAll('.book-card');
-    
-    let visibleCount = 0;
-    
-    bookCards.forEach(card => {
-        const title = card.dataset.title;
-        const genre = card.dataset.genre;
-        
-        const matchesSearch = title.includes(searchQuery);
-        const matchesGenre = selectedGenre === 'all' || genre === selectedGenre;
-        
-        if (matchesSearch && matchesGenre) {
-            card.style.display = 'block';
-            visibleCount++;
-        } else {
-            card.style.display = 'none';
-        }
-    });
-    
-    // Show "no results" message if no books match
-    const booksGrid = document.getElementById('books-grid');
-    let noResultsMsg = document.getElementById('no-results-message');
-    
-    if (visibleCount === 0 && bookCards.length > 0) {
-        if (!noResultsMsg) {
-            noResultsMsg = document.createElement('div');
-            noResultsMsg.id = 'no-results-message';
-            noResultsMsg.style.cssText = 'grid-column: 1/-1; text-align: center; padding: 4rem 2rem;';
-            noResultsMsg.innerHTML = `
+  const searchQuery = document
+    .getElementById('book-search')
+    .value.toLowerCase();
+  const selectedGenre = document
+    .getElementById('genre-select')
+    .value.toLowerCase();
+  const bookCards = document.querySelectorAll('.book-card');
+
+  let visibleCount = 0;
+
+  bookCards.forEach((card) => {
+    const title = card.dataset.title;
+    const genre = card.dataset.genre;
+
+    const matchesSearch = title.includes(searchQuery);
+    const matchesGenre = selectedGenre === 'all' || genre === selectedGenre;
+
+    if (matchesSearch && matchesGenre) {
+      card.style.display = 'block';
+      visibleCount++;
+    } else {
+      card.style.display = 'none';
+    }
+  });
+
+  // Show "no results" message if no books match
+  const booksGrid = document.getElementById('books-grid');
+  let noResultsMsg = document.getElementById('no-results-message');
+
+  if (visibleCount === 0 && bookCards.length > 0) {
+    if (!noResultsMsg) {
+      noResultsMsg = document.createElement('div');
+      noResultsMsg.id = 'no-results-message';
+      noResultsMsg.style.cssText =
+        'grid-column: 1/-1; text-align: center; padding: 4rem 2rem;';
+      noResultsMsg.innerHTML = `
                 <i class="fas fa-search" style="font-size: 4rem; color: var(--gray); margin-bottom: 1rem; display: block;"></i>
                 <h3 style="font-size: 1.5rem; color: var(--dark); margin-bottom: 0.5rem;">No Books Found</h3>
                 <p style="color: var(--gray);">Try adjusting your search or filter criteria.</p>
             `;
-            booksGrid.appendChild(noResultsMsg);
-        }
-    } else if (noResultsMsg) {
-        noResultsMsg.remove();
+      booksGrid.appendChild(noResultsMsg);
     }
+  } else if (noResultsMsg) {
+    noResultsMsg.remove();
+  }
 }
 
 function showBookDetails(bookId) {
-    // Get books from localStorage
-    const savedBooks = localStorage.getItem('books');
-    const books = savedBooks ? JSON.parse(savedBooks) : [];
-    
-    const book = books.find(b => b.id === bookId);
-    if (!book) return;
-    
-    document.getElementById('modal-book-cover').src = book.cover;
-    document.getElementById('modal-book-title').textContent = book.title;
-    document.getElementById('modal-book-author').textContent = book.author;
-    document.getElementById('modal-book-date').textContent = formatDate(book.date);
-    document.getElementById('modal-book-pages').textContent = book.pages;
-    document.getElementById('modal-book-preview').textContent = book.preview;
-    
-    // Store current book ID for reading
-    document.getElementById('book-modal').dataset.bookId = bookId;
-    
-    openModal('book-modal');
+  // Get books from localStorage using robust utility
+  const books = getBooksFromStorage();
+
+  const book = books.find((b) => b.id === bookId);
+  if (!book) return;
+
+  document.getElementById('modal-book-cover').src = book.cover;
+  document.getElementById('modal-book-title').textContent = book.title;
+  document.getElementById('modal-book-author').textContent = book.author;
+  document.getElementById('modal-book-date').textContent = formatDate(
+    book.date,
+  );
+  document.getElementById('modal-book-pages').textContent = book.pages;
+  document.getElementById('modal-book-preview').textContent = book.preview;
+
+  // Store current book ID for reading
+  document.getElementById('book-modal').dataset.bookId = bookId;
+
+  openModal('book-modal');
 }
 
 function readBook() {
-    const bookId = document.getElementById('book-modal').dataset.bookId;
-    window.location.href = `reader.html?id=${bookId}`;
+  const bookId = document.getElementById('book-modal').dataset.bookId;
+  window.location.href = `reader.html?id=${bookId}`;
 }
 
 // =============================
@@ -280,41 +326,41 @@ function readBook() {
 // =============================
 
 function openModal(modalId) {
-    const modal = document.getElementById(modalId);
-    modal.classList.add('active');
-    document.body.style.overflow = 'hidden';
+  const modal = document.getElementById(modalId);
+  modal.classList.add('active');
+  document.body.style.overflow = 'hidden';
 }
 
 function closeModal(modalId) {
-    const modal = document.getElementById(modalId);
-    modal.classList.remove('active');
-    document.body.style.overflow = 'auto';
+  const modal = document.getElementById(modalId);
+  modal.classList.remove('active');
+  document.body.style.overflow = 'auto';
 }
 
 function showLoginModal() {
-    openModal('login-modal');
+  openModal('login-modal');
 }
 
 function showRegisterModal() {
-    // Registration removed - redirect to login
-    showLoginModal();
+  // Registration removed - redirect to login
+  showLoginModal();
 }
 
 function switchToRegister() {
-    // Registration removed - do nothing
+  // Registration removed - do nothing
 }
 
 function switchToLogin() {
-    // Just close any modals and show login
-    closeModal('register-modal');
-    openModal('login-modal');
+  // Just close any modals and show login
+  closeModal('register-modal');
+  openModal('login-modal');
 }
 
 // Close modal when clicking outside
-document.addEventListener('click', function(event) {
-    if (event.target.classList.contains('modal')) {
-        closeModal(event.target.id);
-    }
+document.addEventListener('click', function (event) {
+  if (event.target.classList.contains('modal')) {
+    closeModal(event.target.id);
+  }
 });
 
 // =============================
@@ -322,23 +368,27 @@ document.addEventListener('click', function(event) {
 // =============================
 
 function toggleMobileMenu() {
-    const navLinks = document.querySelector('.nav-links');
-    navLinks.classList.toggle('active');
+  const navLinks = document.querySelector('.nav-links');
+  navLinks.classList.toggle('active');
 }
 
 function scrollToBooks() {
-    document.getElementById('featured').scrollIntoView({ behavior: 'smooth' });
+  document.getElementById('featured').scrollIntoView({ behavior: 'smooth' });
 }
 
 function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
 }
 
 function showNotification(message) {
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.style.cssText = `
+  // Create notification element
+  const notification = document.createElement('div');
+  notification.style.cssText = `
         position: fixed;
         top: 100px;
         right: 2rem;
@@ -351,65 +401,65 @@ function showNotification(message) {
         animation: slideInRight 0.3s ease;
         max-width: 300px;
     `;
-    notification.textContent = message;
-    
-    document.body.appendChild(notification);
-    
-    // Remove after 3 seconds
-    setTimeout(() => {
-        notification.style.animation = 'slideOutRight 0.3s ease';
-        setTimeout(() => notification.remove(), 300);
-    }, 3000);
+  notification.textContent = message;
+
+  document.body.appendChild(notification);
+
+  // Remove after 3 seconds
+  setTimeout(() => {
+    notification.style.animation = 'slideOutRight 0.3s ease';
+    setTimeout(() => notification.remove(), 300);
+  }, 3000);
 }
 
 function setupEventListeners() {
-    // Navbar scroll effect
-    window.addEventListener('scroll', function() {
-        const navbar = document.querySelector('.navbar');
-        if (window.scrollY > 50) {
-            navbar.classList.add('scrolled');
-        } else {
-            navbar.classList.remove('scrolled');
-        }
+  // Navbar scroll effect
+  window.addEventListener('scroll', function () {
+    const navbar = document.querySelector('.navbar');
+    if (window.scrollY > 50) {
+      navbar.classList.add('scrolled');
+    } else {
+      navbar.classList.remove('scrolled');
+    }
+  });
+
+  // Smooth scroll for navigation links
+  document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+    anchor.addEventListener('click', function (e) {
+      e.preventDefault();
+      const target = document.querySelector(this.getAttribute('href'));
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        // Close mobile menu if open
+        const navLinks = document.querySelector('.nav-links');
+        navLinks.classList.remove('active');
+      }
     });
-    
-    // Smooth scroll for navigation links
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function(e) {
-            e.preventDefault();
-            const target = document.querySelector(this.getAttribute('href'));
-            if (target) {
-                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                
-                // Close mobile menu if open
-                const navLinks = document.querySelector('.nav-links');
-                navLinks.classList.remove('active');
-            }
-        });
-    });
+  });
 }
 
 function generateAboutImage() {
-    // Create a placeholder for the about image
-    const aboutImg = document.getElementById('about-img');
-    if (aboutImg) {
-        aboutImg.src = 'https://picsum.photos/600/400?random=100';
-        aboutImg.alt = 'Reading and storytelling';
-    }
+  // Create a placeholder for the about image
+  const aboutImg = document.getElementById('about-img');
+  if (aboutImg) {
+    aboutImg.src = 'https://picsum.photos/600/400?random=100';
+    aboutImg.alt = 'Reading and storytelling';
+  }
 }
 
 // =============================
 // KEYBOARD SHORTCUTS
 // =============================
 
-document.addEventListener('keydown', function(event) {
-    // ESC to close modals
-    if (event.key === 'Escape') {
-        const activeModal = document.querySelector('.modal.active');
-        if (activeModal) {
-            closeModal(activeModal.id);
-        }
+document.addEventListener('keydown', function (event) {
+  // ESC to close modals
+  if (event.key === 'Escape') {
+    const activeModal = document.querySelector('.modal.active');
+    if (activeModal) {
+      closeModal(activeModal.id);
     }
+  }
 });
 
 // =============================
@@ -418,11 +468,11 @@ document.addEventListener('keydown', function(event) {
 
 // Make functions available globally for dashboard and reader pages
 window.ArchazzBook = {
-    books: books,
-    currentUser: currentUser,
-    AUTHOR_EMAIL: AUTHOR_EMAIL,
-    checkAuthState: checkAuthState,
-    logout: logout,
-    showNotification: showNotification,
-    formatDate: formatDate
+  books: books,
+  currentUser: currentUser,
+  AUTHOR_EMAIL: AUTHOR_EMAIL,
+  checkAuthState: checkAuthState,
+  logout: logout,
+  showNotification: showNotification,
+  formatDate: formatDate,
 };
