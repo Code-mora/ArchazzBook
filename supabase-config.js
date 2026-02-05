@@ -5,7 +5,7 @@
 // Supabase Project Configuration
 // Get anon key from: Supabase Dashboard > Settings > API > Publishable key
 const SUPABASE_URL = 'https://ohruaeodmwbvhrcvrzgy.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_ZZSa4WVVnt8fF60eDZwCA4w_2Dl0ypQ3';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ocnVhZW9kbXdidmhyY3Zyemd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAyNzY0MDAsImV4cCI6MjA4NTg1MjQwMH0.e9SE-3gE9qfWbde-QD5gWR0VLUKF7PDgKg-0I3Uk5ys';
 
 // Initialize Supabase client on window object (avoid any local variable conflicts)
 if (!window.supabaseClient) {
