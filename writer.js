@@ -655,7 +655,7 @@ function stripHtml(html) {
 // =============================
 
 
-async function saveBook() {
+async function saveBook(status = 'draft') {
   // Validate
   if (!currentBook.title || currentBook.title.trim() === '') {
     alert('Please enter a book title');
@@ -680,7 +680,8 @@ async function saveBook() {
   });
 
   // Show saving notification
-  showNotification('Saving book...');
+  const savingMsg = status === 'published' ? 'Publishing book...' : 'Saving draft...';
+  showNotification(savingMsg);
 
   try {
     let coverUrl = currentBook.cover; // Keep existing cover URL or base64
@@ -709,7 +710,7 @@ async function saveBook() {
 
     // Prepare book data for Supabase
     const bookData = {
-      user_id: null, // Allow NULL for single-author setup
+      user_id: null,
       title: currentBook.title,
       author_name: currentBook.author || 'Archazz',
       genre: document.getElementById('book-genre').value || 'other',
@@ -717,6 +718,7 @@ async function saveBook() {
       preview: generatePreview(),
       cover_url: coverUrl,
       chapters: currentBook.chapters, // Store as JSONB
+      status: status // 'draft' or 'published'
     };
 
     let savedBook;
@@ -733,7 +735,15 @@ async function saveBook() {
         savedBook = await window.SupabaseAPI.createBook(bookData);
       }
       
-      console.log('✅ Book saved to Supabase successfully');
+      console.log(`✅ Book saved to Supabase successfully (${status})`);
+      
+      const successMsg = status === 'published' ? 'Book published successfully!' : 'Draft saved successfully!';
+      alert(successMsg);
+      
+      // Redirect to dashboard after short delay
+      setTimeout(() => {
+        window.location.href = 'dashboard.html';
+      }, 500);
     }
 
     // Also save to localStorage for backward compatibility

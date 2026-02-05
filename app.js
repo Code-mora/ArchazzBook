@@ -151,6 +151,13 @@ async function loadBooks() {
       console.log('📚 Loading books from Supabase...');
       books = await window.SupabaseAPI.fetchBooks();
       console.log(`✅ Loaded ${books.length} books from Supabase`);
+      
+      // Filter for published books only
+      // New books usually don't have a status or are 'published' by default if from localStorage logic fallback
+      // But now we filter strictly for 'published' if the field exists
+      books = books.filter(book => !book.status || book.status === 'published');
+      console.log(`🔎 Filtered: ${books.length} published books`);
+
     } catch (error) {
       console.error('❌ Failed to load from Supabase:', error);
       // Fallback to localStorage

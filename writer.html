@@ -806,8 +806,11 @@
                     <button class="btn btn-outline" id="mobile-cover-btn" onclick="uploadCover()" style="display: none;">
                         <i class="fas fa-image"></i><span> Cover</span>
                     </button>
-                    <button class="btn btn-primary" onclick="saveBook()">
-                        <i class="fas fa-save"></i><span> Save & Publish</span>
+                    <button class="btn btn-outline" onclick="saveBook('draft')" title="Save as Draft">
+                        <i class="fas fa-save"></i><span> Save Draft</span>
+                    </button>
+                    <button class="btn btn-primary" onclick="saveBook('published')" title="Publish to Readers">
+                        <i class="fas fa-paper-plane"></i><span> Publish</span>
                     </button>
                 </div>
             </div>

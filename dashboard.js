@@ -139,46 +139,73 @@ async function loadDashboardBooks() {
     const coverImage = book.cover_url || book.cover || 'https://via.placeholder.com/150x200?text=No+Cover';
     const bookDate = book.created_at || book.date;
 
+    // Determine status (default to 'published' for legacy books, 'draft' for new ones if no status)
+    const status = book.status || 'published';
+    const statusBadge = `
+      <span style="
+        font-size: 0.75rem; 
+        padding: 0.25rem 0.6rem; 
+        border-radius: 99px; 
+        background: ${status === 'published' ? '#dcfce7' : '#f3f4f6'}; 
+        color: ${status === 'published' ? '#166534' : '#4b5563'};
+        font-weight: 600;
+        border: 1px solid ${status === 'published' ? '#bbf7d0' : '#e5e7eb'};
+        display: inline-block;
+      ">
+        ${status === 'published' ? 'PUBLISHED' : 'DRAFT'}
+      </span>
+    `;
+
     if (isMobile) {
       const card = document.createElement('div');
       card.className = 'book-mobile-card';
+      // Inline styles for mobile card structure
       card.innerHTML = `
-                <img src="${coverImage}" alt="${book.title}" onerror="this.src='https://via.placeholder.com/150x200?text=No+Cover'">
-                <div class="book-mobile-info">
-                    <h3>${book.title}</h3>
-                    <div class="book-mobile-meta">
-                        <span><i class="fas fa-book"></i> ${book.pages} pages</span>
-                        <span><i class="fas fa-calendar"></i> ${formatDate(bookDate)}</span>
-                    </div>
-                    <div class="book-mobile-actions">
-                        <button class="btn btn-outline" onclick="window.location.href='writer.html?id=${book.id}'" style="flex: 1;">
-                            <i class="fas fa-edit"></i> Edit
-                        </button>
-                        <button class="btn btn-danger" onclick="deleteBook(${book.id})" style="flex: 1;">
-                            <i class="fas fa-trash"></i> Delete
-                        </button>
-                    </div>
-                </div>
-            `;
+        <div style="display: flex; gap: 1rem;">
+          <img src="${coverImage}" alt="${book.title}" style="width: 80px; height: 120px; object-fit: cover; border-radius: 6px; background: #f3f4f6;" onerror="this.src='https://via.placeholder.com/80x120?text=No+Cover'">
+          <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; overflow: hidden;">
+            <div style="margin-bottom: 0.5rem;">${statusBadge}</div>
+            <h3 style="font-size: 1.125rem; font-weight: 700; margin: 0 0 0.25rem 0; color: #1f2937; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${book.title}</h3>
+            <div style="font-size: 0.875rem; color: #6b7280; display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center;">
+               <span><i class="fas fa-book"></i> ${book.pages || 0} pages</span>
+               <span><i class="fas fa-calendar"></i> ${formatDate(bookDate)}</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="book-mobile-actions" style="display: flex; gap: 0.5rem; padding-top: 1rem; margin-top: 0.5rem; border-top: 1px solid #f3f4f6;">
+            <button class="btn btn-outline" onclick="window.location.href='writer.html?id=${book.id}'" style="flex: 1; padding: 0.5rem; justify-content: center;">
+                <i class="fas fa-edit"></i> Edit
+            </button>
+            <button class="btn btn-danger" onclick="deleteBook(${book.id})" style="flex: 1; padding: 0.5rem; justify-content: center;">
+                <i class="fas fa-trash"></i> Delete
+            </button>
+        </div>
+      `;
       tbody.appendChild(card);
     } else {
       const row = document.createElement('tr');
       row.innerHTML = `
-                <td><img src="${coverImage}" alt="${book.title}" class="book-thumbnail" onerror="this.src='https://via.placeholder.com/150x200?text=No+Cover'"></td>
-                <td><strong>${book.title}</strong></td>
-                <td>${book.pages} pages</td>
-                <td>${formatDate(bookDate)}</td>
-                <td>
-                    <div class="action-buttons">
-                        <button class="btn btn-icon btn-outline" onclick="window.location.href='writer.html?id=${book.id}'" title="Edit">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-icon btn-danger" onclick="deleteBook(${book.id})" title="Delete">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            `;
+        <td><img src="${coverImage}" alt="${book.title}" class="book-thumbnail" onerror="this.src='https://via.placeholder.com/150x200?text=No+Cover'"></td>
+        <td>
+            <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+                <strong style="font-size: 1rem;">${book.title}</strong>
+                <div>${statusBadge}</div>
+            </div>
+        </td>
+        <td>${book.pages || 0} pages</td>
+        <td>${formatDate(bookDate)}</td>
+        <td>
+            <div class="action-buttons">
+                <button class="btn btn-icon btn-outline" onclick="window.location.href='writer.html?id=${book.id}'" title="Edit">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-icon btn-danger" onclick="deleteBook(${book.id})" title="Delete">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </td>
+      `;
       tbody.appendChild(row);
     }
   });
