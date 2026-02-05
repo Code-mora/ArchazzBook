@@ -709,6 +709,7 @@ async function saveBook() {
 
     // Prepare book data for Supabase
     const bookData = {
+      user_id: null, // Allow NULL for single-author setup
       title: currentBook.title,
       author_name: currentBook.author || 'Archazz',
       genre: document.getElementById('book-genre').value || 'other',
