@@ -4,8 +4,8 @@
 
 // Supabase Project Configuration
 // Get anon key from: Supabase Dashboard > Settings > API > Publishable key
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://ohruaeodmwbvhrcvrzgy.supabase.co';
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_ZZSa4WWnt8fF60eDZwCA4w_2Dl0ypQ3';
+const SUPABASE_URL = 'https://ohruaeodmwbvhrcvrzgy.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ocnVhZW9kbXdidmhyY3Zyemd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzgxNTM3NTgsImV4cCI6MjA1MzcyOTc1OH0.F_SJmgvCIGNqrV9j-IIokUyZAMLgQ7Gl8o1lbU-XvQo';
 
 // Initialize Supabase client on window object (avoid any local variable conflicts)
 if (!window.supabaseClient) {
