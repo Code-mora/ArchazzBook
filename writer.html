@@ -300,11 +300,27 @@
             background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
         }
 
+        .chapter-info {
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .chapter-info strong {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
         .chapter-info span {
             display: block;
             font-size: 0.75rem;
             color: var(--gray);
             margin-top: 0.25rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .chapter-actions {
@@ -670,11 +686,26 @@
             }
             
             .chapter-info {
+                flex: 1;
+                min-width: 0;
+                overflow: hidden;
+            }
+            
+            .chapter-info strong {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            
+            .chapter-info {
                 font-size: 0.9375rem;
             }
             
             .chapter-info span {
                 font-size: 0.75rem;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
             }
             
             .chapter-action-btn {
