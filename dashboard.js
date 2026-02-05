@@ -45,69 +45,16 @@ function saveBooksToStorage(booksData) {
   }
 }
 
+
 document.addEventListener('DOMContentLoaded', function () {
   // Check authentication
   checkDashboardAuth();
-
-  // Initialize Quill Editor
-  setTimeout(() => {
-    // Register custom fonts
-    const Font = Quill.import('formats/font');
-    Font.whitelist = [
-      'times-new-roman',
-      'arial',
-      'georgia',
-      'courier',
-      'verdana',
-    ];
-    Quill.register(Font, true);
-
-    quillEditor = new Quill('#story-editor', {
-      theme: 'snow',
-      placeholder: 'Write your story here... Use toolbar to format!',
-      modules: {
-        toolbar: [
-          [
-            {
-              font: [
-                'times-new-roman',
-                'arial',
-                'georgia',
-                'courier',
-                'verdana',
-              ],
-            },
-          ],
-          ['bold', 'italic', 'underline', 'strike'],
-          [{ header: [1, 2, 3, false] }],
-          [{ size: ['small', false, 'large', 'huge'] }],
-          [{ color: [] }, { background: [] }],
-          [{ list: 'ordered' }, { list: 'bullet' }],
-          [{ align: [] }],
-          ['blockquote', 'code-block'],
-          ['link'],
-          ['clean'],
-        ],
-      },
-    });
-
-    // Set default font to Times New Roman
-    quillEditor.format('font', 'times-new-roman');
-
-    // Sync to hidden input
-    quillEditor.on('text-change', () => {
-      document.getElementById('book-story').value = quillEditor.root.innerHTML;
-    });
-  }, 100);
 
   // Load books
   loadDashboardBooks();
 
   // Update stats
   updateStats();
-
-  // Hide upload form initially
-  document.getElementById('upload-section').style.display = 'none';
 });
 
 // =============================
