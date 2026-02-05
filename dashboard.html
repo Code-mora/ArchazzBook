@@ -202,17 +202,23 @@
                 justify-content: center;
             }
             
-            /* Hide table, show card layout on mobile */
+            /* Mobile Responsive Table */
             table {
-                display: none;
+                display: block; /* Show table as block container */
+                background: transparent;
+                box-shadow: none;
+            }
+
+            thead {
+                display: none; /* Hide headers only */
             }
             
-            /* Mobile card layout for books */
+            /* Mobile card layout container */
             #books-table-body {
                 display: flex;
                 flex-direction: column;
                 gap: 1rem;
-                padding: 1.5rem;
+                padding: 0.5rem 0; /* Adjust padding */
             }
             
             /* Book card styling will be added via JavaScript */
