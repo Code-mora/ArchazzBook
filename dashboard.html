@@ -289,10 +289,47 @@
                 margin-top: 0.5rem;
             }
             
+
             .book-mobile-actions .btn {
                 padding: 0.75rem 1rem;
                 font-size: 0.875rem;
                 font-weight: 500;
+            }
+
+            /* Mobile Menu Styles */
+            .mobile-menu-btn {
+                display: block; /* Show on mobile */
+                background: none;
+                border: none;
+                font-size: 1.5rem;
+                color: var(--dark);
+                cursor: pointer;
+                margin-left: auto;
+            }
+
+            .nav-links {
+                display: none; /* Hide default nav links on mobile */
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: white;
+                flex-direction: column;
+                padding: 1rem;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                border-top: 1px solid var(--gray-lighter);
+                gap: 1rem;
+                z-index: 100;
+            }
+
+            .nav-links.active {
+                display: flex; /* Show when active */
+                animation: slideDown 0.3s ease;
+            }
+
+            @keyframes slideDown {
+                from { opacity: 0; transform: translateY(-10px); }
+                to { opacity: 1; transform: translateY(0); }
             }
         }
         
@@ -374,7 +411,13 @@
                 font-size: 0.875rem;
             }
         }
-    
+
+        /* Desktop: Hide mobile menu button */
+        @media (min-width: 769px) {
+            .mobile-menu-btn {
+                display: none;
+            }
+        }
     </style>
 </head>
 <body>
@@ -385,7 +428,13 @@
                 <i class="fas fa-book-open"></i>
                 <span>ArchazzBook</span>
             </a>
-            <div class="nav-links">
+            
+            <!-- Mobile Menu Button -->
+            <button class="mobile-menu-btn" onclick="toggleMobileMenu()">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <div class="nav-links" id="nav-links">
                 <a href="index.html" class="nav-link">Home</a>
                 <a href="dashboard.html" class="nav-link active">Dashboard</a>
                 <div class="user-menu">

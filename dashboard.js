@@ -520,3 +520,24 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+/* =============================
+   MOBILE MENU TOGGLE
+   ============================= */
+function toggleMobileMenu() {
+    const navLinks = document.getElementById('nav-links');
+    navLinks.classList.toggle('active');
+    
+    // Animate icon
+    const icon = document.querySelector('.mobile-menu-btn i');
+    if (navLinks.classList.contains('active')) {
+        icon.classList.remove('fa-bars');
+        icon.classList.add('fa-times');
+    } else {
+        icon.classList.remove('fa-times');
+        icon.classList.add('fa-bars');
+    }
+}
+// Make it global
+window.toggleMobileMenu = toggleMobileMenu;
+
