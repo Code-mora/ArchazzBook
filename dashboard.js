@@ -140,18 +140,29 @@ function checkDashboardAuth() {
 // BOOKS MANAGEMENT
 // =============================
 
-function loadDashboardBooks() {
-  const books = getBooksFromStorage();
+async function loadDashboardBooks() {
+  let books = [];
 
-  // Debug: log books being loaded
-  console.log('Dashboard: Loading books:', books.length);
+  // Try Supabase first
+  if (window.SupabaseAPI) {
+    try {
+      console.log('Dashboard: Loading books from Supabase...');
+      books = await window.SupabaseAPI.fetchBooks();
+      console.log('Dashboard: Loaded', books.length, 'books from Supabase');
+    } catch (error) {
+      console.error('Dashboard: Error loading from Supabase:', error);
+      books = getBooksFromStorage();
+    }
+  } else {
+    books = getBooksFromStorage();
+  }
+
   console.log('Books:', books);
 
   const tbody = document.getElementById('books-table-body');
   tbody.innerHTML = '';
 
   if (books.length === 0) {
-    // Check if mobile
     const isMobile = window.innerWidth <= 768;
 
     if (isMobile) {
@@ -174,21 +185,23 @@ function loadDashboardBooks() {
     return;
   }
 
-  // Check if mobile view
   const isMobile = window.innerWidth <= 768;
 
   books.forEach((book) => {
+    // Use cover_url from Supabase or cover from localStorage
+    const coverImage = book.cover_url || book.cover || 'https://via.placeholder.com/150x200?text=No+Cover';
+    const bookDate = book.created_at || book.date;
+
     if (isMobile) {
-      // Mobile card layout
       const card = document.createElement('div');
       card.className = 'book-mobile-card';
       card.innerHTML = `
-                <img src="${book.cover}" alt="${book.title}">
+                <img src="${coverImage}" alt="${book.title}" onerror="this.src='https://via.placeholder.com/150x200?text=No+Cover'">
                 <div class="book-mobile-info">
                     <h3>${book.title}</h3>
                     <div class="book-mobile-meta">
                         <span><i class="fas fa-book"></i> ${book.pages} pages</span>
-                        <span><i class="fas fa-calendar"></i> ${formatDate(book.date)}</span>
+                        <span><i class="fas fa-calendar"></i> ${formatDate(bookDate)}</span>
                     </div>
                     <div class="book-mobile-actions">
                         <button class="btn btn-outline" onclick="window.location.href='writer.html?id=${book.id}'" style="flex: 1;">
@@ -202,13 +215,12 @@ function loadDashboardBooks() {
             `;
       tbody.appendChild(card);
     } else {
-      // Desktop table layout
       const row = document.createElement('tr');
       row.innerHTML = `
-                <td><img src="${book.cover}" alt="${book.title}" class="book-thumbnail"></td>
+                <td><img src="${coverImage}" alt="${book.title}" class="book-thumbnail" onerror="this.src='https://via.placeholder.com/150x200?text=No+Cover'"></td>
                 <td><strong>${book.title}</strong></td>
                 <td>${book.pages} pages</td>
-                <td>${formatDate(book.date)}</td>
+                <td>${formatDate(bookDate)}</td>
                 <td>
                     <div class="action-buttons">
                         <button class="btn btn-icon btn-outline" onclick="window.location.href='writer.html?id=${book.id}'" title="Edit">
@@ -326,26 +338,34 @@ function handleCoverUpload(event) {
   reader.readAsDataURL(file);
 }
 
-function deleteBook(bookId) {
+async function deleteBook(bookId) {
   if (!confirm('Are you sure you want to delete this book?')) {
     return;
   }
 
-  // Get books using robust utility
-  let books = getBooksFromStorage();
+  try {
+    // Delete from Supabase if available
+    if (window.SupabaseAPI) {
+      console.log('🗑️ Deleting book from Supabase...');
+      await window.SupabaseAPI.deleteBook(bookId);
+      console.log('✅ Book deleted from Supabase');
+    }
 
-  // Remove book
-  books = books.filter((b) => b.id !== bookId);
+    // Also remove from localStorage for backward compatibility
+    let books = getBooksFromStorage();
+    books = books.filter((b) => b.id !== bookId);
+    saveBooksToStorage(books);
 
-  // Save using robust utility
-  saveBooksToStorage(books);
+    // Show notification
+    showNotification('Book deleted successfully');
 
-  // Show notification
-  showNotification('Book deleted successfully');
-
-  // Reload
-  loadDashboardBooks();
-  updateStats();
+    // Reload
+    await loadDashboardBooks();
+    updateStats();
+  } catch (error) {
+    console.error('❌ Error deleting book:', error);
+    showNotification('Failed to delete book. Please try again.');
+  }
 }
 
 function editBook(bookId) {
@@ -411,8 +431,20 @@ function toggleUploadForm() {
   }
 }
 
-function updateStats() {
-  const books = getBooksFromStorage();
+async function updateStats() {
+  let books = [];
+
+  // Try Supabase first
+  if (window.SupabaseAPI) {
+    try {
+      books = await window.SupabaseAPI.fetchBooks();
+    } catch (error) {
+      console.error('Error fetching books for stats:', error);
+      books = getBooksFromStorage();
+    }
+  } else {
+    books = getBooksFromStorage();
+  }
 
   // Total Books - Real count
   const totalBooks = books.length;

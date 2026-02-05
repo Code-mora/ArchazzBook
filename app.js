@@ -136,17 +136,34 @@ function updateUIForLoggedInUser() {
   }
 }
 
-// =============================
 // BOOKS MANAGEMENT
 // =============================
 
-function loadBooks() {
+async function loadBooks() {
   const booksGrid = document.getElementById('books-grid');
   booksGrid.innerHTML = '';
 
-  // Get books from localStorage using robust utility
-  const savedBooks = getBooksFromStorage();
-  const books = savedBooks.length > 0 ? savedBooks : [];
+  let books = [];
+
+  // Try to load from Supabase first
+  if (window.SupabaseAPI) {
+    try {
+      console.log('📚 Loading books from Supabase...');
+      books = await window.SupabaseAPI.fetchBooks();
+      console.log(`✅ Loaded ${books.length} books from Supabase`);
+    } catch (error) {
+      console.error('❌ Failed to load from Supabase:', error);
+      // Fallback to localStorage
+      console.log('⏳ Falling back to localStorage...');
+      const savedBooks = getBooksFromStorage();
+      books = savedBooks.length > 0 ? savedBooks : [];
+    }
+  } else {
+    // Supabase not available, use localStorage
+    console.log('📦 Loading books from localStorage...');
+    const savedBooks = getBooksFromStorage();
+    books = savedBooks.length > 0 ? savedBooks : [];
+  }
 
   // Update hero stats
   updateHeroStats(books);
@@ -294,18 +311,30 @@ function filterBooks() {
   }
 }
 
-function showBookDetails(bookId) {
-  // Get books from localStorage using robust utility
-  const books = getBooksFromStorage();
+async function showBookDetails(bookId) {
+  let books = [];
+
+  // Try Supabase first
+  if (window.SupabaseAPI) {
+    try {
+      books = await window.SupabaseAPI.fetchBooks();
+    } catch (error) {
+      console.error('Error fetching from Supabase:', error);
+      books = getBooksFromStorage();
+    }
+  } else {
+    books = getBooksFromStorage();
+  }
 
   const book = books.find((b) => b.id === bookId);
   if (!book) return;
 
-  document.getElementById('modal-book-cover').src = book.cover;
+  document.getElementById('modal-book-cover').src = book.cover_url || book.cover;
   document.getElementById('modal-book-title').textContent = book.title;
-  document.getElementById('modal-book-author').textContent = book.author;
+  document.getElementById('modal-book-author').textContent =
+    book.author_name || book.author;
   document.getElementById('modal-book-date').textContent = formatDate(
-    book.date,
+    book.created_at || book.date,
   );
   document.getElementById('modal-book-pages').textContent = book.pages;
   document.getElementById('modal-book-preview').textContent = book.preview;

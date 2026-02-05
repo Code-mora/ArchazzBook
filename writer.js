@@ -122,15 +122,21 @@ function checkEditMode() {
 
 function loadExistingBook(bookId) {
   const books = getBooksFromStorage();
-  if (books.length === 0) return;
+  if (books.length === 0) {
+    console.warn('⚠️ No books found in storage for edit mode');
+    return;
+  }
 
   const book = books.find((b) => b.id === bookId);
 
   if (!book) {
-    alert('Book not found');
+    console.error('❌ Book with ID ' + bookId + ' not found');
+    alert('Book not found. Returning to dashboard.');
     window.location.href = 'dashboard.html';
     return;
   }
+
+  console.log('✅ Found book for editing:', book.title);
 
   // Convert old format to new chapter-based format
   if (!book.chapters) {
@@ -648,7 +654,8 @@ function stripHtml(html) {
 // SAVE & PUBLISH
 // =============================
 
-function saveBook() {
+
+async function saveBook() {
   // Validate
   if (!currentBook.title || currentBook.title.trim() === '') {
     alert('Please enter a book title');
@@ -672,50 +679,108 @@ function saveBook() {
     totalPages += chapter.pages.length;
   });
 
-  // Prepare book data
-  const bookData = {
-    ...currentBook,
-    id: currentBook.id || Date.now(),
-    title: currentBook.title,
-    author: currentBook.author,
-    genre: document.getElementById('book-genre').value || 'other',
-    date: currentBook.date || new Date().toISOString().split('T')[0],
-    pages: totalPages,
-    // Generate preview from first chapter
-    preview: generatePreview(),
-  };
+  // Show saving notification
+  showNotification('Saving book...');
 
-  // Get existing books using robust utility
-  let books = getBooksFromStorage();
+  try {
+    let coverUrl = currentBook.cover; // Keep existing cover URL or base64
 
-  if (isEditMode && editingBookId) {
-    // Update existing book
-    const index = books.findIndex((b) => b.id === editingBookId);
-    if (index !== -1) {
-      books[index] = bookData;
-    } else {
-      books.push(bookData);
+    // If cover is base64 and Supabase is available, upload to storage
+    if (window.SupabaseAPI && currentBook.cover && currentBook.cover.startsWith('data:')) {
+      try {
+        console.log('📤 Uploading cover to Supabase Storage...');
+        
+        // Convert base64 to blob
+        const response = await fetch(currentBook.cover);
+        const blob = await response.blob();
+        
+        // Create file with unique name
+        const fileName = `cover-${Date.now()}.${blob.type.split('/')[1]}`;
+        const file = new File([blob], fileName, { type: blob.type });
+        
+        // Upload to Supabase Storage
+        coverUrl = await window.SupabaseAPI.uploadCover(file, fileName);
+        console.log('✅ Cover uploaded to Supabase:', coverUrl);
+      } catch (uploadError) {
+        console.error('⚠️ Failed to upload cover to Supabase:', uploadError);
+        // Continue with base64 cover
+      }
     }
-  } else {
-    // New book
-    books.push(bookData);
+
+    // Prepare book data for Supabase
+    const bookData = {
+      title: currentBook.title,
+      author_name: currentBook.author || 'Archazz',
+      genre: document.getElementById('book-genre').value || 'other',
+      pages: totalPages,
+      preview: generatePreview(),
+      cover_url: coverUrl,
+      chapters: currentBook.chapters, // Store as JSONB
+    };
+
+    let savedBook;
+
+    // Save to Supabase if available
+    if (window.SupabaseAPI) {
+      if (isEditMode && editingBookId) {
+        // Update existing book
+        console.log('✏️ Updating book in Supabase...');
+        savedBook = await window.SupabaseAPI.updateBook(editingBookId, bookData);
+      } else {
+        // Create new book
+        console.log('📝 Creating new book in Supabase...');
+        savedBook = await window.SupabaseAPI.createBook(bookData);
+      }
+      
+      console.log('✅ Book saved to Supabase successfully');
+    }
+
+    // Also save to localStorage for backward compatibility
+    const localStorageData = {
+      ...currentBook,
+      id: savedBook ? savedBook.id : (currentBook.id || Date.now()),
+      title: currentBook.title,
+      author: currentBook.author,
+      genre: bookData.genre,
+      date: savedBook ? savedBook.created_at : (currentBook.date || new Date().toISOString().split('T')[0]),
+      pages: totalPages,
+      preview: bookData.preview,
+      cover: coverUrl,
+    };
+
+    let books = getBooksFromStorage();
+
+    if (isEditMode && editingBookId) {
+      const index = books.findIndex((b) => b.id === editingBookId);
+      if (index !== -1) {
+        books[index] = localStorageData;
+      } else {
+        books.push(localStorageData);
+      }
+    } else {
+      books.push(localStorageData);
+    }
+
+    saveBooksToStorage(books);
+
+    // Debug log
+    console.log('Book saved:', localStorageData);
+    console.log('Total books in storage:', books.length);
+
+    // Show success
+    showNotification('✅ Book published successfully!');
+
+    // Redirect to dashboard after a moment
+    setTimeout(() => {
+      window.location.href = 'dashboard.html';
+    }, 1500);
+
+  } catch (error) {
+    console.error('❌ Error saving book:', error);
+    showNotification('Failed to save book. Please try again.');
   }
-
-  // Save to localStorage using robust utility
-  saveBooksToStorage(books);
-
-  // Debug: log saved book
-  console.log('Book saved:', bookData);
-  console.log('Total books in storage:', books.length);
-
-  // Show success
-  showNotification('Book saved successfully!');
-
-  // Redirect to dashboard after a moment
-  setTimeout(() => {
-    window.location.href = 'dashboard.html';
-  }, 1500);
 }
+
 
 function generatePreview() {
   if (currentBook.chapters.length === 0) return '';
