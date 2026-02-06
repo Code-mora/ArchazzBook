@@ -51,24 +51,44 @@ export async function setupNotifications(vapidKey) {
     if (permission === 'granted') {
       console.log('✅ Permission granted. Starting sequence...');
       
-      // ATTEMPT 1: Normal Flow
+      // REGISTER & WAIT FOR SERVICE WORKER
       try {
-        await navigator.serviceWorker.register('./firebase-messaging-sw.js');
-        const registration = await navigator.serviceWorker.ready;
-        console.log('👷 SW Ready.');
+        alert('Step 1: SW Registration Start...');
+        
+        let swReg;
+        try {
+           swReg = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
+           alert('Step 2: SW Registered.');
+        } catch (e) {
+           alert('❌ SW Register Failed: ' + e.message);
+           throw e;
+        }
 
+        alert('Step 3: Waiting for SW Ready...');
+        const registration = await navigator.serviceWorker.ready;
+        alert('Step 4: SW Ready!');
+
+        // Get FCM Token
+        alert('Step 5: Getting Token...');
         const currentToken = await getToken(messaging, { 
           vapidKey: vapidKey,
           serviceWorkerRegistration: registration 
         });
 
         if (currentToken) {
+          alert('Step 6: Token Got! ' + currentToken.slice(0, 10) + '...');
           console.log('🎟️ FCM Token:', currentToken);
+          // Save to Supabase
           await saveTokenToSupabase(currentToken);
           return true;
+        } else {
+          alert('⚠️ No registration token available.');
+          return false;
         }
+
       } catch (err) {
-        console.warn('⚠️ Attempt 1 failed:', err);
+        console.error('An error occurred while retrieving token/sw: ', err);
+        alert('❌ Error Step 5 (Get Token): ' + err.message);
         console.log('🔄 Trying Auto-Fix (Reset & Retry)...');
         
         // AUTO-FIX: Reset and Retry
