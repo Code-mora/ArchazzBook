@@ -746,26 +746,36 @@
                     const myComments = JSON.parse(localStorage.getItem('my_comments') || '[]');
                     const isMyComment = myComments.includes(comment.id);
                     
-                    const canEdit = isAuthorUser || isMyComment;
+                    // Rules:
+                    // 1. Edit: Only the creator can edit (User can edit theirs, Author can edit theirs)
+                    // 2. Delete: Creator can delete, AND Author can delete anyone's (moderation)
+                    
+                    const isCommentCreator = isMyComment || (isAuthorUser && comment.is_author);
+                    
+                    const canEdit = isCommentCreator;
+                    const canDelete = isCommentCreator || isAuthorUser;
                     
                     let actionsHtml = '';
+                    
+                    // Always allow reply
+                    actionsHtml += `
+                        <button class="action-btn reply-btn" onclick="startReply(${comment.id}, '${comment.author_name}')">
+                            <i class="fas fa-reply"></i> Reply
+                        </button>
+                    `;
+                    
                     if (canEdit) {
-                         actionsHtml = `
-                            <button class="action-btn reply-btn" onclick="startReply(${comment.id}, '${comment.author_name}')">
-                                <i class="fas fa-reply"></i> Reply
-                            </button>
+                        actionsHtml += `
                             <button class="action-btn edit-btn" onclick="startEdit(${comment.id})">
                                 <i class="fas fa-edit"></i> Edit
                             </button>
+                        `;
+                    }
+                    
+                    if (canDelete) {
+                         actionsHtml += `
                             <button class="action-btn delete-btn" onclick="deleteCommentNode(${comment.id})">
                                 <i class="fas fa-trash"></i> Delete
-                            </button>
-                        `;
-                    } else {
-                        // Regular users can still reply
-                        actionsHtml = `
-                            <button class="action-btn reply-btn" onclick="startReply(${comment.id}, '${comment.author_name}')">
-                                <i class="fas fa-reply"></i> Reply
                             </button>
                         `;
                     }
