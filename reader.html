@@ -694,12 +694,18 @@
                     const initials = comment.author_name.substring(0, 2).toUpperCase();
                     const timeAgo = formatTimeAgo(new Date(comment.created_at));
                     
-                    // Check if current user is author to show Reply/Edit/Delete buttons
+                    // Check logic for permissions
                     const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
                     const isAuthorUser = currentUser && currentUser.role === 'author';
                     
+                    // Check if this comment belongs to the anonymous user
+                    const myComments = JSON.parse(localStorage.getItem('my_comments') || '[]');
+                    const isMyComment = myComments.includes(comment.id);
+                    
+                    const canEdit = isAuthorUser || isMyComment;
+                    
                     let actionsHtml = '';
-                    if (isAuthorUser) {
+                    if (canEdit) {
                          actionsHtml = `
                             <button class="action-btn reply-btn" onclick="startReply(${comment.id}, '${comment.author_name}')">
                                 <i class="fas fa-reply"></i> Reply
@@ -709,6 +715,13 @@
                             </button>
                             <button class="action-btn delete-btn" onclick="deleteCommentNode(${comment.id})">
                                 <i class="fas fa-trash"></i> Delete
+                            </button>
+                        `;
+                    } else {
+                        // Regular users can still reply
+                        actionsHtml = `
+                            <button class="action-btn reply-btn" onclick="startReply(${comment.id}, '${comment.author_name}')">
+                                <i class="fas fa-reply"></i> Reply
                             </button>
                         `;
                     }
@@ -866,7 +879,12 @@
                     parent_id: replyToId
                 };
                 
-                await window.SupabaseAPI.createComment(commentData);
+                const result = await window.SupabaseAPI.createComment(commentData);
+                
+                // Save to my_comments in localStorage so I can edit/delete it later
+                const myComments = JSON.parse(localStorage.getItem('my_comments') || '[]');
+                myComments.push(result.id);
+                localStorage.setItem('my_comments', JSON.stringify(myComments));
                 
                 // Reset form
                 input.value = '';
