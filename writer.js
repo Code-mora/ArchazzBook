@@ -111,9 +111,15 @@ function checkWriterAuth() {
 
 async function checkEditMode() {
   const urlParams = new URLSearchParams(window.location.search);
-  const bookId = parseInt(urlParams.get('id'));
+  let bookId = urlParams.get('id'); // Get as string first
 
   if (bookId) {
+    // If it looks like a pure number (legacy ID), parse it. 
+    // Otherwise keep as string (Supabase UUID or complex ID).
+    if (/^\d+$/.test(bookId)) {
+      bookId = parseInt(bookId);
+    }
+
     isEditMode = true;
     editingBookId = bookId;
     await loadExistingBook(bookId);
@@ -125,16 +131,16 @@ async function loadExistingBook(bookId) {
   
   // 1. Try Local Storage first
   const localBooks = getBooksFromStorage();
-  book = localBooks.find((b) => b.id === bookId);
+  // Use loose equality (==) to match string "123" with number 123
+  book = localBooks.find((b) => b.id == bookId);
 
   // 2. If not found locally, try Supabase
   if (!book && window.SupabaseAPI) {
     try {
       console.log(`🔍 Book ${bookId} not in local storage. Fetching from Supabase...`);
-      // We need a specific fetch method for single book or filter from list
-      // Since fetchBookById might not exist yet, we fetch all (cached usually) or specific
       const sbBooks = await window.SupabaseAPI.fetchBooks(); 
-      book = sbBooks.find(b => b.id === bookId);
+      // Use loose equality (==) here too
+      book = sbBooks.find(b => b.id == bookId);
     } catch (err) {
       console.error('❌ Error fetching from Supabase:', err);
     }
