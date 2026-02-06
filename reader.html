@@ -190,21 +190,7 @@
             color: white;
         }
         
-        .progress-bar {
-            position: fixed;
-            top: 76px;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: var(--gray-lighter);
-            z-index: 100;
-        }
-        
-        .progress-fill {
-            height: 100%;
-            background: var(--gradient-primary);
-            transition: width 0.3s ease;
-        }
+
         
         
         @media (max-width: 768px) {
@@ -350,10 +336,7 @@
         </div>
     </nav>
 
-    <!-- Progress Bar -->
-    <div class="progress-bar">
-        <div class="progress-fill" id="reading-progress"></div>
-    </div>
+
 
     <!-- Reader -->
     <div class="reader-container">
@@ -437,8 +420,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             loadBook();
             
-            // Update progress on scroll
-            window.addEventListener('scroll', updateReadingProgress);
+
         });
 
         async function loadBook() {
@@ -599,8 +581,7 @@
                 document.getElementById('pagination-controls').style.display = 'none';
             }
             
-            // Update progress bar
-            updateProgressBar();
+
             
             // Scroll to top
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -654,7 +635,7 @@
             
             // Update progress bar
             const progress = (pageNumber / totalPages) * 100;
-            document.getElementById('reading-progress').style.width = `${progress}%`;
+
             
             // Scroll to top
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -702,33 +683,7 @@
             }
         }
 
-        function updateProgressBar() {
-            if (!currentBook.chapters) return;
-            
-            // Calculate overall progress across all chapters
-            let totalPages = 0;
-            let pagesRead = 0;
-            
-            for (let i = 0; i < currentBook.chapters.length; i++) {
-                const chapter = currentBook.chapters[i];
-                totalPages += chapter.pages.length;
-                
-                if (chapter.id === currentChapterId) {
-                    pagesRead += currentPageInChapter;
-                    break;
-                } else {
-                    pagesRead += chapter.pages.length;
-                }
-            }
-            
-            const progress = (pagesRead / totalPages) * 100;
-            document.getElementById('reading-progress').style.width = `${progress}%`;
-        }
 
-        function updateReadingProgress() {
-            // Called on scroll - use stored progress
-            updateProgressBar();
-        }
 
         function increaseFontSize() {
             currentFontSize += 0.125;
