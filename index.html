@@ -310,9 +310,12 @@
     <script type="module">
         import { setupNotifications, getBrowserId } from './notifications.js';
 
-        const btnAllow = document.getElementById('btn-allow-notif');
-        const btnDismiss = document.getElementById('btn-dismiss-notif');
-        const banner = document.getElementById('notif-banner');
+        const btnAllow = document.getElementById('btn-allow');
+        const btnDismiss = document.getElementById('btn-dismiss');
+        const banner = document.getElementById('notification-banner');
+
+        // DEBUG: Check if elements exist
+        // alert('DEBUG INIT: Button found? ' + (btnAllow ? 'YES' : 'NO'));
 
         // Check if user has already made a choice
         const notifStatus = localStorage.getItem('archazz_notif_status');
