@@ -288,13 +288,13 @@
                 <i class="fas fa-bell"></i>
             </div>
             <div class="notification-text">
-                <h3>Enable Notifications?</h3>
+                <h3>Enable Notifications? (v2)</h3>
                 <p>Get instant updates when new chapters are published!</p>
             </div>
         </div>
         <div class="notification-actions">
             <button id="btn-dismiss" class="btn btn-outline btn-sm">Later</button>
-            <button id="btn-allow" class="btn btn-primary btn-sm">Enable</button>
+            <button id="btn-allow" class="btn btn-primary btn-sm" onclick="alert('⚡ HTML Clicked!')">Enable</button>
         </div>
     </div>
 
@@ -303,11 +303,10 @@
     
     <!-- Supabase Configuration -->
     <script src="supabase-config.js"></script>
-    
-    <!-- App Logic -->
+
     <!-- App Logic -->
     <script src="app.js"></script>
     <!-- Notifications Script (Contains logic & UI handling) -->
-    <script type="module" src="notifications.js"></script>
+    <script type="module" src="notifications.js?v=debug2"></script>
 </body>
 </html>
