@@ -255,8 +255,8 @@ function createBookCard(book) {
     
     card.innerHTML = `
         <div class="book-cover-container">
-            <span class="genre-badge">${genre}</span>
             <img src="${book.cover}" alt="${book.title}" loading="lazy">
+            <span class="genre-badge">${genre}</span>
         </div>
         <div class="book-info">
             <h3 class="book-title">${book.title}</h3>
