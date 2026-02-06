@@ -25,18 +25,32 @@ export function getBrowserId() {
   return bid;
 }
 
-// 2b. Helper: Hard Reset Service Worker & Token
+// 2b. Helper: Hard Reset Service Worker & Token & Cache
 async function hardReset() {
-  console.log('🧹 Performing Hard Reset...');
+  console.log('🧹 Performing Hard Reset (Nuclear Option)...');
   try {
     // 1. Delete Token
-    await deleteToken(messaging).catch(() => {});
+    if (messaging) await deleteToken(messaging).catch(() => {});
+    
     // 2. Unregister ALL Service Workers
-    const registrations = await navigator.serviceWorker.getRegistrations();
-    for (const registration of registrations) {
-      await registration.unregister();
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (const registration of registrations) {
+        console.log('🔥 Unregistering SW:', registration.scope);
+        await registration.unregister();
+      }
     }
-    console.log('✨ Cleanup complete.');
+
+    // 3. Clear Cache Storage
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      for (const key of keys) {
+        console.log('🗑️ Deleting Cache:', key);
+        await caches.delete(key);
+      }
+    }
+    
+    console.log('✨ Cleanup complete. Reloading soon...');
   } catch (err) {
     console.warn('Cleanup warning:', err);
   }
@@ -172,8 +186,21 @@ function showInAppNotification(payload) {
 // Make functions available globally for non-module scripts if needed
 window.NotifManager = {
   setup: setupNotifications,
-  getBrowserId: getBrowserId
+  getBrowserId: getBrowserId,
+  hardReset: hardReset
 };
+
+// AUTO-RESET CHECK
+if (window.location.search.includes('reset=true')) {
+    // Need to wrap in async IIFE
+    (async () => {
+        alert('🔁 RESET MODE DETECTED. Nuclear Cleanup...');
+        await hardReset();
+        localStorage.clear(); // Clear storage too
+        alert('✅ App Reset Complete. Reloading fresh...');
+        window.location.href = window.location.pathname;
+    })();
+}
 
 // AUTO-ATTACH Listener (To avoid inline script issues)
 console.log('📜 Notifications Script Loaded. Looking for buttons...');
