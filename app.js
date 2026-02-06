@@ -250,9 +250,12 @@ function createBookCard(book) {
     // Handle legacy vs Supabase fields
     const authorName = book.author || book.author_name || 'Archazz';
     const dateValue = book.date || book.created_at || new Date().toISOString();
+    const genre = book.genre || 'General';
+    const pages = book.pages || '?';
     
     card.innerHTML = `
         <div class="book-cover-container">
+            <span class="genre-badge">${genre}</span>
             <img src="${book.cover}" alt="${book.title}" loading="lazy">
         </div>
         <div class="book-info">
@@ -260,9 +263,14 @@ function createBookCard(book) {
             <p class="book-author">by ${authorName}</p>
             <p class="book-preview">${book.preview}</p>
             <div class="book-footer">
-                <span class="book-date">
-                    <i class="fas fa-calendar"></i> ${formatDate(dateValue)}
-                </span>
+                <div class="book-meta">
+                    <span class="book-pages" title="Pages">
+                        <i class="fas fa-file-alt"></i> ${pages}
+                    </span>
+                    <span class="book-date">
+                        <i class="fas fa-calendar"></i> ${formatDate(dateValue)}
+                    </span>
+                </div>
                 <button class="btn btn-primary" onclick="event.stopPropagation(); showBookDetails(${book.id})">
                     <i class="fas fa-book-reader"></i> Read
                 </button>

@@ -317,6 +317,177 @@
                 margin-top: 1.5rem;
             }
         }
+        
+        /* Comments Section Styles */
+        .comments-container {
+            max-width: 800px;
+            margin: 3rem auto 0;
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            box-shadow: var(--shadow-md);
+        }
+
+        .comments-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--gray-lighter);
+            padding-bottom: 1rem;
+        }
+
+        .comments-header h3 {
+            font-size: 1.25rem;
+            color: var(--dark);
+            margin: 0;
+        }
+
+        .badge {
+            background: var(--gray-lighter);
+            color: var(--gray);
+            padding: 0.25rem 0.75rem;
+            border-radius: 1rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .comments-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .comment {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--gray-lighter);
+            border-radius: var(--radius-md);
+            transition: var(--transition-fast);
+        }
+
+        .comment:hover {
+            box-shadow: var(--shadow-sm);
+        }
+
+        .comment.author {
+            background: #EEF2FF; /* Light Indigo */
+            border: 1px solid #C7D2FE;
+        }
+        
+        .comment.author .comment-author-name {
+            color: var(--primary);
+        }
+        
+        .comment.author .comment-author-name::after {
+            content: 'Author';
+            background: var(--primary);
+            color: white;
+            font-size: 0.6rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+        }
+
+        .comment.reply {
+            margin-left: 3rem;
+            border-left: 3px solid var(--gray-light);
+        }
+
+        .comment-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--gradient-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        
+        .comment.author .comment-avatar {
+            background: var(--gradient-primary);
+        }
+
+        .comment-body {
+            flex: 1;
+        }
+
+        .comment-header-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+
+        .comment-author-name {
+            font-weight: 600;
+            color: var(--dark);
+            font-size: 0.9rem;
+        }
+
+        .comment-time {
+            font-size: 0.75rem;
+            color: var(--gray);
+        }
+
+        .comment-text {
+            color: var(--dark-light);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+
+        .comment-actions {
+            margin-top: 0.5rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .reply-btn {
+            background: none;
+            border: none;
+            color: var(--primary);
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .reply-btn:hover {
+            text-decoration: underline;
+        }
+
+        .comment-form {
+            background: var(--gray-lighter);
+            padding: 1.5rem;
+            border-radius: var(--radius-md);
+        }
+
+        .comment-form h4 {
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+
+        .comment-form textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--gray-light);
+            border-radius: var(--radius-sm);
+            margin-bottom: 1rem;
+            font-family: inherit;
+            resize: vertical;
+        }
+        
+        .loading-spinner {
+            text-align: center;
+            color: var(--gray);
+            padding: 2rem;
+        }
     
     </style>
 </head>
@@ -394,6 +565,31 @@
                 </button>
             </div>
 
+            <!-- Comments Section -->
+            <div id="comments-section" class="comments-container">
+                <div class="comments-header">
+                    <h3><i class="fas fa-comments"></i> Comments</h3>
+                    <span id="comments-count" class="badge">0</span>
+                </div>
+
+                <div id="comments-list" class="comments-list">
+                    <!-- Comments will be loaded here -->
+                    <div class="loading-spinner">
+                        <i class="fas fa-spinner fa-spin"></i> Loading comments...
+                    </div>
+                </div>
+
+                <div class="comment-form">
+                    <h4>Leave a comment</h4>
+                    <div class="form-group">
+                        <textarea id="comment-input" placeholder="Share your thoughts about this story..." rows="3"></textarea>
+                    </div>
+                    <button class="btn btn-primary" onclick="postComment()">
+                        <i class="fas fa-paper-plane"></i> Post Comment
+                    </button>
+                </div>
+            </div>
+
             <div class="reader-navigation">
                 <button class="btn btn-large btn-outline" onclick="window.history.back()">
                     <i class="fas fa-arrow-left"></i> Back to Library
@@ -419,9 +615,195 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             loadBook();
-            
-
+            loadComments();
         });
+
+        // --- Comments Logic ---
+        
+        async function loadComments() {
+            if (!currentBook || !window.SupabaseAPI) return;
+            
+            const commentsList = document.getElementById('comments-list');
+            const commentsCount = document.getElementById('comments-count');
+            
+            try {
+                const comments = await window.SupabaseAPI.fetchComments(currentBook.id);
+                
+                commentsCount.textContent = comments.length;
+                
+                if (comments.length === 0) {
+                    commentsList.innerHTML = `
+                        <div style="text-align: center; color: var(--gray); padding: 2rem;">
+                            <i class="far fa-comment-dots" style="font-size: 2rem; margin-bottom: 0.5rem;"></i>
+                            <p>No comments yet. Be the first to share your thoughts!</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                commentsList.innerHTML = ''; // Clear loading/empty message
+                
+                // Process comments to handle threading (simplistic 1-level for now or flat list ordered by time)
+                // Since our query fetches all ordered by time, we just render them.
+                // If we want nested replies, we'd need to organize them. 
+                // For simplicity, let's render strictly chronologically but indent replies if parent_id exists
+                
+                // First pass: Map ID to comment for lookup
+                const commentMap = {};
+                comments.forEach(c => commentMap[c.id] = c);
+                
+                // Separate roots and replies
+                const rootComments = comments.filter(c => !c.parent_id);
+                const replies = comments.filter(c => c.parent_id);
+                
+                // Helper to render
+                const renderComment = (comment, isReply = false) => {
+                    const div = document.createElement('div');
+                    div.className = `comment ${comment.is_author ? 'author' : ''} ${isReply ? 'reply' : ''}`;
+                    div.id = `comment-${comment.id}`;
+                    
+                    const initials = comment.author_name.substring(0, 2).toUpperCase();
+                    const timeAgo = formatTimeAgo(new Date(comment.created_at));
+                    
+                    // Check if current user is author to show Reply button
+                    const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+                    const isAuthorUser = currentUser && currentUser.role === 'author';
+                    const replyButton = isAuthorUser ? 
+                        `<button class="reply-btn" onclick="startReply(${comment.id}, '${comment.author_name}')">Reply</button>` : '';
+
+                    div.innerHTML = `
+                        <div class="comment-avatar">${initials}</div>
+                        <div class="comment-body">
+                            <div class="comment-header-row">
+                                <span class="comment-author-name">${comment.author_name}</span>
+                                <span class="comment-time">${timeAgo}</span>
+                            </div>
+                            <div class="comment-text">${escapeHtml(comment.content)}</div>
+                            <div class="comment-actions">
+                                ${replyButton}
+                            </div>
+                        </div>
+                    `;
+                    return div;
+                };
+
+                // Render roots then their replies
+                rootComments.forEach(root => {
+                    commentsList.appendChild(renderComment(root));
+                    
+                    // Find direct replies
+                    const myReplies = replies.filter(r => r.parent_id === root.id);
+                    myReplies.forEach(reply => {
+                       commentsList.appendChild(renderComment(reply, true)); 
+                    });
+                });
+                
+            } catch (error) {
+                console.error('Error loading comments:', error);
+                commentsList.innerHTML = '<p class="text-center">Failed to load comments.</p>';
+            }
+        }
+        
+        let replyToId = null;
+        
+        function startReply(commentId, authorName) {
+            replyToId = commentId;
+            const textarea = document.getElementById('comment-input');
+            textarea.placeholder = `Replying to ${authorName}...`;
+            textarea.focus();
+            
+            // Scroll to form
+            document.querySelector('.comment-form').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function postComment() {
+            const input = document.getElementById('comment-input');
+            const content = input.value.trim();
+            
+            if (!content) {
+                alert('Please enter a comment.');
+                return;
+            }
+            
+            // Identity logic
+            const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+            const isAuthor = currentUser && currentUser.role === 'author';
+            
+            // Random name for anon, or 'Archazz' for author
+            let authorName = 'Anonymous';
+            if (isAuthor) {
+                authorName = 'Archazz'; // Or currentUser.name
+            } else {
+                const adjectives = ['Happy', 'Curious', 'Quiet', 'Loud', 'Mystery', 'Brave'];
+                const animals = ['Reader', 'Bookworm', 'Cat', 'Owl', 'Fox', 'Panda'];
+                const randAdj = adjectives[Math.floor(Math.random() * adjectives.length)];
+                const randAni = animals[Math.floor(Math.random() * animals.length)];
+                authorName = `${randAdj} ${randAni}`;
+            }
+
+            try {
+                // Show temporary state
+                const btn = document.querySelector('.comment-form button');
+                const originalText = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Posting...';
+                
+                const commentData = {
+                    book_id: currentBook.id,
+                    content: content,
+                    author_name: authorName,
+                    is_author: isAuthor,
+                    parent_id: replyToId
+                };
+                
+                await window.SupabaseAPI.createComment(commentData);
+                
+                // Reset form
+                input.value = '';
+                replyToId = null;
+                input.placeholder = "Share your thoughts about this story...";
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                
+                showNotification('Comment posted!');
+                loadComments(); // Refresh list
+                
+            } catch (error) {
+                console.error('Error posting comment:', error);
+                alert('Failed to post comment. Please try again.');
+                
+                // Reset button
+                const btn = document.querySelector('.comment-form button');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i> Post Comment';
+            }
+        }
+
+        function formatTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            let interval = seconds / 31536000;
+            if (interval > 1) return Math.floor(interval) + "y ago";
+            interval = seconds / 2592000;
+            if (interval > 1) return Math.floor(interval) + "mo ago";
+            interval = seconds / 86400;
+            if (interval > 1) return Math.floor(interval) + "d ago";
+            interval = seconds / 3600;
+            if (interval > 1) return Math.floor(interval) + "h ago";
+            interval = seconds / 60;
+            if (interval > 1) return Math.floor(interval) + "m ago";
+            return "Just now";
+        }
+        
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+        }
 
         async function loadBook() {
             // Get book ID from URL

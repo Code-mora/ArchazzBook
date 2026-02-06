@@ -203,6 +203,48 @@ async function incrementBookViews(bookId) {
   }
 }
 
+/**
+ * Fetch comments for a book from Supabase
+ * @param {number} bookId - Book ID
+ * @returns {Promise<Array>} Array of comments
+ */
+async function fetchComments(bookId) {
+  try {
+    const { data, error } = await window.supabaseClient
+      .from('comments')
+      .select('*')
+      .eq('book_id', bookId)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('❌ Error fetching comments:', error);
+    return [];
+  }
+}
+
+/**
+ * Create a new comment in Supabase
+ * @param {Object} commentData - Comment data
+ * @returns {Promise<Object>} Created comment
+ */
+async function createComment(commentData) {
+  try {
+    const { data, error } = await window.supabaseClient
+      .from('comments')
+      .insert([commentData])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('❌ Error creating comment:', error);
+    throw error;
+  }
+}
+
 // Export functions for use in other files
 window.SupabaseAPI = {
   fetchBooks: fetchBooksFromSupabase,
@@ -212,4 +254,6 @@ window.SupabaseAPI = {
   uploadCover: uploadCoverToSupabase,
   deleteCover: deleteCoverFromSupabase,
   incrementViews: incrementBookViews,
+  fetchComments: fetchComments,
+  createComment: createComment,
 };
