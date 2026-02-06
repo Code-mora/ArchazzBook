@@ -67,42 +67,34 @@ export async function setupNotifications(vapidKey) {
       
       // REGISTER & WAIT FOR SERVICE WORKER
       try {
-        alert('Step 1: SW Registration Start...');
-        
         let swReg;
         try {
            swReg = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
-           alert('Step 2: SW Registered.');
         } catch (e) {
-           alert('❌ SW Register Failed: ' + e.message);
+           console.error('❌ SW Register Failed:', e);
            throw e;
         }
 
-        alert('Step 3: Waiting for SW Ready...');
         const registration = await navigator.serviceWorker.ready;
-        alert('Step 4: SW Ready!');
 
         // Get FCM Token
-        alert('Step 5: Getting Token...');
         const currentToken = await getToken(messaging, { 
           vapidKey: vapidKey,
           serviceWorkerRegistration: registration 
         });
 
         if (currentToken) {
-          alert('Step 6: Token Got! ' + currentToken.slice(0, 10) + '...');
           console.log('🎟️ FCM Token:', currentToken);
           // Save to Supabase
           await saveTokenToSupabase(currentToken);
           return true;
         } else {
-          alert('⚠️ No registration token available.');
+          console.warn('⚠️ No registration token available.');
           return false;
         }
 
       } catch (err) {
         console.error('An error occurred while retrieving token/sw: ', err);
-        alert('❌ Error Step 5 (Get Token): ' + err.message);
         console.log('🔄 Trying Auto-Fix (Reset & Retry)...');
         
         // AUTO-FIX: Reset and Retry
@@ -125,7 +117,6 @@ export async function setupNotifications(vapidKey) {
           }
         } catch (retryErr) {
           console.error('❌ Retry failed too:', retryErr);
-          alert('Failed to enable notifications. Please clear browser data for this site and try again.');
           throw retryErr;
         }
       }
@@ -211,7 +202,7 @@ const banner = document.getElementById('notification-banner');
 if (btnAllow) {
   console.log('✅ Found Allow Button. Attaching listener...');
   btnAllow.addEventListener('click', async () => {
-      alert('🖱️ CLICK DETECTED (from module)!');
+      // alert('🖱️ CLICK DETECTED (from module)!'); // Removed debug
       if (banner) banner.style.display = 'none';
       
       // VAPID Key provided by user (Updated)
