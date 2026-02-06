@@ -247,17 +247,21 @@ function createBookCard(book) {
   card.dataset.genre = (book.genre || 'other').toLowerCase();
   card.dataset.title = book.title.toLowerCase();
 
-  card.innerHTML = `
+    // Handle legacy vs Supabase fields
+    const authorName = book.author || book.author_name || 'Archazz';
+    const dateValue = book.date || book.created_at || new Date().toISOString();
+    
+    card.innerHTML = `
         <div class="book-cover-container">
             <img src="${book.cover}" alt="${book.title}" loading="lazy">
         </div>
         <div class="book-info">
             <h3 class="book-title">${book.title}</h3>
-            <p class="book-author">by ${book.author}</p>
+            <p class="book-author">by ${authorName}</p>
             <p class="book-preview">${book.preview}</p>
             <div class="book-footer">
                 <span class="book-date">
-                    <i class="fas fa-calendar"></i> ${formatDate(book.date)}
+                    <i class="fas fa-calendar"></i> ${formatDate(dateValue)}
                 </span>
                 <button class="btn btn-primary" onclick="event.stopPropagation(); showBookDetails(${book.id})">
                     <i class="fas fa-book-reader"></i> Read
@@ -339,10 +343,10 @@ async function showBookDetails(bookId) {
   document.getElementById('modal-book-cover').src = book.cover_url || book.cover;
   document.getElementById('modal-book-title').textContent = book.title;
   document.getElementById('modal-book-author').textContent =
-    book.author_name || book.author;
-  document.getElementById('modal-book-date').textContent = formatDate(
-    book.created_at || book.date,
-  );
+    book.author_name || book.author || 'Archazz';
+  
+  const dateValue = book.created_at || book.date || new Date().toISOString();
+  document.getElementById('modal-book-date').textContent = formatDate(dateValue);
   document.getElementById('modal-book-pages').textContent = book.pages;
   document.getElementById('modal-book-preview').textContent = book.preview;
 
