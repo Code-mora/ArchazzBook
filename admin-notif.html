@@ -93,7 +93,7 @@
             let tokens = [];
 
             if (target === 'debug') {
-                const myId = localStorage.getItem('archazz_browser_id');
+                const myId = getOrGenerateBrowserId();
                 const { data } = await window.supabaseClient
                     .from('fcm_tokens')
                     .select('fcm_token')
@@ -161,11 +161,23 @@
 
         } catch (err) {
             console.error(err);
+            // DEBUG: Show popup on mobile so user knows WHY it failed
+            alert(`❌ Error: ${err.message}`);
             showStatus(`❌ Error: ${err.message}`, 'error');
         } finally {
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Notification';
         }
+    }
+
+    // Helper to generate ID if missing (copied from notifications.js)
+    function getOrGenerateBrowserId() {
+        let bid = localStorage.getItem('archazz_browser_id');
+        if (!bid) {
+            bid = crypto.randomUUID();
+            localStorage.setItem('archazz_browser_id', bid);
+        }
+        return bid;
     }
 
     function showStatus(html, type) {
