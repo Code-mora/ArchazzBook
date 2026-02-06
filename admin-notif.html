@@ -63,9 +63,6 @@
 <script src="supabase-config.js"></script>
 
 <script>
-    // SERVER KEY (Legacy)
-    const SERVER_KEY = 'AIzaSyC5rkrZtTmLZyv7TrhTp4xLQ1IWQ6fmb84'; 
-
     async function loadStats() {
         const { count, error } = await window.supabaseClient
             .from('fcm_tokens')
@@ -89,7 +86,7 @@
         const clickUrl = document.getElementById('url').value;
 
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-cog fa-spin"></i> Generating Command...';
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending via Vercel API...';
         statusBox.style.display = 'none';
 
         try {
@@ -110,59 +107,71 @@
                 const { data } = await window.supabaseClient
                     .from('fcm_tokens')
                     .select('fcm_token')
-                    .limit(1); // Sample 1 for testing
+                    .limit(10); // Limit broadcast to 10 for safety test
                 
-                if (data && data.length > 0) tokens.push(data[0].fcm_token);
+                if (data && data.length > 0) tokens = data.map(t => t.fcm_token);
             }
 
             if (tokens.length === 0) {
                 throw new Error("No target tokens found.");
             }
 
-            const targetToken = tokens[0];
-            
-            // Generate PowerShell Command
-            const psCommand = `
-$headers = @{
-  "Authorization" = "key=${SERVER_KEY}"
-  "Content-Type" = "application/json"
-}
+            console.log(`Sending to ${tokens.length} devices...`);
+            let successCount = 0;
+            let failCount = 0;
 
-$body = @{
-  "to" = "${targetToken}"
-  "notification" = @{
-    "title" = "${title}"
-    "body" = "${body}"
-    "icon" = "https://cdn-icons-png.flaticon.com/512/2232/2232688.png"
-    "click_action" = "${clickUrl}"
-  }
-} | ConvertTo-Json
+            // Send to each token via our Vercel API
+            // Note: In a real production app, you'd send the array of tokens to the API 
+            // and let the server handle the loop/batching.
+            // For this simple version, we loop here.
+            for (const token of tokens) {
+                try {
+                    const response = await fetch('/api/send-push', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            token: token,
+                            title: title,
+                            body: body,
+                            url: clickUrl,
+                            icon: 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png'
+                        })
+                    });
 
-Invoke-RestMethod -Uri "https://fcm.googleapis.com/fcm/send" -Method Post -Headers $headers -Body $body
-`;
+                    const result = await response.json();
+                    if (response.ok && result.success) {
+                        successCount++;
+                    } else {
+                        console.error('API Error:', result);
+                        failCount++;
+                    }
+                } catch (e) {
+                    console.error('Fetch Error:', e);
+                    failCount++;
+                }
+            }
 
-            // Display Command
-            const cleanCommand = psCommand.trim();
-            
-            showStatus(`
-                <strong>✅ Command Generated!</strong><br>
-                Copy kode di bawah ini, lalu Paste di Terminal VS Code (PowerShell):
-                <textarea onclick="this.select()" style="margin-top:10px; height:150px; font-family:monospace; font-size:12px;">${cleanCommand}</textarea>
-            `, 'success');
+            if (successCount > 0) {
+                showStatus(`✅ Success! Sent to ${successCount} devices. (Failed: ${failCount})`, 'success');
+            } else {
+                showStatus(`❌ Failed to send. Check console.`, 'error');
+            }
 
         } catch (err) {
             console.error(err);
             showStatus(`❌ Error: ${err.message}`, 'error');
         } finally {
             btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-terminal"></i> Generate Command';
+            btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Notification';
         }
     }
 
     function showStatus(html, type) {
         const box = document.getElementById('status-box');
         box.innerHTML = html;
-        box.className = `status ${type}`;
+        box.className = `status ${type}`; // set class (success/error)
         box.style.display = 'block';
     }
 </script>

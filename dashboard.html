@@ -450,6 +450,9 @@
                             <a href="index.html">
                                 <i class="fas fa-home"></i> Home
                             </a>
+                            <a href="admin-notif.html">
+                                <i class="fas fa-bell"></i> Send Notification
+                            </a>
                             <a href="#" onclick="logout()">
                                 <i class="fas fa-sign-out-alt"></i> Logout
                             </a>
@@ -505,9 +508,14 @@
             <div class="books-table">
                 <div class="table-header">
                     <h2>My Books</h2>
-                    <button class="btn btn-primary" onclick="window.location.href='writer.html'">
-                        <i class="fas fa-pen-fancy"></i> Write New Book
-                    </button>
+                    <div class="action-buttons-header" style="display:flex; gap:10px;">
+                        <button class="btn btn-outline" onclick="window.location.href='admin-notif.html'">
+                            <i class="fas fa-bullhorn"></i> Broadcast
+                        </button>
+                        <button class="btn btn-primary" onclick="window.location.href='writer.html'">
+                            <i class="fas fa-pen-fancy"></i> Write New Book
+                        </button>
+                    </div>
                 </div>
                 
                 <table>
