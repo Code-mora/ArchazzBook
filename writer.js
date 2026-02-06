@@ -143,12 +143,23 @@ async function loadExistingBook(bookId) {
       book = sbBooks.find(b => b.id == bookId);
     } catch (err) {
       console.error('❌ Error fetching from Supabase:', err);
+      // DEBUG: Show error on screen
+      alert("Error fetching Supabase: " + err.message);
     }
   }
 
+  // DEBUG: Show diagnosis if failing
   if (!book) {
+    const debugMsg = `
+      FAILED TO FIND BOOK.
+      Looked for ID: ${bookId} (Type: ${typeof bookId})
+      Local Books Count: ${localBooks.length}
+      Supabase API Available: ${!!window.SupabaseAPI}
+      URL: ${window.location.href}
+    `;
+    alert(debugMsg); // Show popup on mobile
+    
     console.error('❌ Book with ID ' + bookId + ' not found anywhere.');
-    alert('Book not found. Returning to dashboard.');
     window.location.href = 'dashboard.html';
     return;
   }
