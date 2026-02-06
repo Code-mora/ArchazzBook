@@ -109,32 +109,48 @@ function checkWriterAuth() {
 // EDIT MODE CHECK
 // =============================
 
-function checkEditMode() {
+async function checkEditMode() {
   const urlParams = new URLSearchParams(window.location.search);
   const bookId = parseInt(urlParams.get('id'));
 
   if (bookId) {
     isEditMode = true;
     editingBookId = bookId;
-    loadExistingBook(bookId);
+    await loadExistingBook(bookId);
   }
 }
 
-function loadExistingBook(bookId) {
-  const books = getBooksFromStorage();
-  if (books.length === 0) {
-    console.warn('⚠️ No books found in storage for edit mode');
-    return;
+async function loadExistingBook(bookId) {
+  let book = null;
+  
+  // 1. Try Local Storage first
+  const localBooks = getBooksFromStorage();
+  book = localBooks.find((b) => b.id === bookId);
+
+  // 2. If not found locally, try Supabase
+  if (!book && window.SupabaseAPI) {
+    try {
+      console.log(`🔍 Book ${bookId} not in local storage. Fetching from Supabase...`);
+      // We need a specific fetch method for single book or filter from list
+      // Since fetchBookById might not exist yet, we fetch all (cached usually) or specific
+      const sbBooks = await window.SupabaseAPI.fetchBooks(); 
+      book = sbBooks.find(b => b.id === bookId);
+    } catch (err) {
+      console.error('❌ Error fetching from Supabase:', err);
+    }
   }
 
-  const book = books.find((b) => b.id === bookId);
-
   if (!book) {
-    console.error('❌ Book with ID ' + bookId + ' not found');
+    console.error('❌ Book with ID ' + bookId + ' not found anywhere.');
     alert('Book not found. Returning to dashboard.');
     window.location.href = 'dashboard.html';
     return;
   }
+
+  console.log('✅ Found book for editing:', book.title);
+
+  // If fetched from Supabase, ensure we don't overwrite it as a "new" local book
+  // (Handling logic continues below...)
 
   console.log('✅ Found book for editing:', book.title);
 
@@ -707,20 +723,46 @@ function saveBook() {
     books.push(bookData);
   }
 
-  // Save to localStorage using robust utility
+  // Save to localStorage (Local Backup)
   saveBooksToStorage(books);
 
-  // Debug: log saved book
-  console.log('Book saved:', bookData);
-  console.log('Total books in storage:', books.length);
+  // SAVE TO SUPABASE (Cloud Sync)
+  if (window.SupabaseAPI) {
+    // Show uploading status
+    const saveBtn = document.querySelector('.save-btn');
+    const originalText = saveBtn ? saveBtn.innerHTML : '';
+    if (saveBtn) saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving to Cloud...';
 
-  // Show success
-  showNotification('Book saved successfully!');
-
-  // Redirect to dashboard after a moment
-  setTimeout(() => {
-    window.location.href = 'dashboard.html';
-  }, 1500);
+    // Async save
+    window.SupabaseAPI.saveBook(bookData)
+      .then(() => {
+        console.log('✅ Book synced to Supabase!');
+        showNotification('Book saved & synced to cloud!');
+        
+        // Redirect only after successful cloud save
+        setTimeout(() => {
+          window.location.href = 'dashboard.html';
+        }, 1500);
+      })
+      .catch((err) => {
+        console.error('❌ Cloud Sync failed:', err);
+        showNotification('Saved locally, but Cloud Sync failed.');
+        
+        // Restore button
+        if (saveBtn) saveBtn.innerHTML = originalText;
+        
+        // Still redirect because local save worked
+        setTimeout(() => {
+          window.location.href = 'dashboard.html';
+        }, 2000);
+      });
+  } else {
+    // Fallback if no Supabase
+    showNotification('Book saved locally (Offline mode)');
+    setTimeout(() => {
+      window.location.href = 'dashboard.html';
+    }, 1500);
+  }
 }
 
 function generatePreview() {
