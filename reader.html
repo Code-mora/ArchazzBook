@@ -687,13 +687,14 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             loadBook();
-            loadComments();
         });
 
         // --- Comments Logic ---
         
         async function loadComments() {
             if (!currentBook || !window.SupabaseAPI) return;
+            // ... (rest of function is fine)
+
             
             const commentsList = document.getElementById('comments-list');
             const commentsCount = document.getElementById('comments-count');
@@ -1035,6 +1036,9 @@
                 // Old single-story format - convert for backwards compatibility
                 loadLegacyBook();
             }
+            
+            // Now that book is loaded, fetch comments
+            loadComments();
         }
 
         function loadChapterBasedBook() {
