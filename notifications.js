@@ -133,30 +133,39 @@ export async function setupNotifications(vapidKey) {
 
 // 4. Save Token to Supabase
 async function saveTokenToSupabase(token) {
-  const browserId = getBrowserId();
-  const deviceInfo = navigator.userAgent;
+  try {
+      const browserId = getBrowserId();
+      // Truncate user agent just in case
+      const deviceInfo = navigator.userAgent.substring(0, 200);
 
-  // Check if Supabase client is available (from window object)
-  if (!window.supabaseClient) {
-    console.error('❌ Supabase client not found!');
-    return;
-  }
+      // Check if Supabase client is available (from window object)
+      if (!window.supabaseClient) {
+        alert('❌ Error: Supabase Client not ready!');
+        console.error('❌ Supabase client not found!');
+        return;
+      }
 
-  console.log('💾 Saving token to Supabase...', { browserId });
+      console.log('💾 Saving token to Supabase...', { browserId });
+      // alert('Debug: Saving to DB... ' + browserId.slice(0,5));
 
-  const { error } = await window.supabaseClient
-    .from('fcm_tokens')
-    .upsert({ 
-      browser_id: browserId, 
-      fcm_token: token,
-      device_info: deviceInfo,
-      last_active: new Date().toISOString()
-    }, { onConflict: 'browser_id' });
+      const { error } = await window.supabaseClient
+        .from('fcm_tokens')
+        .upsert({ 
+          browser_id: browserId, 
+          fcm_token: token,
+          device_info: deviceInfo,
+          last_active: new Date().toISOString()
+        }, { onConflict: 'browser_id' });
 
-  if (error) {
-    console.error('❌ Error saving token to Supabase:', error);
-  } else {
-    console.log('✅ Token saved to Supabase!');
+      if (error) {
+        alert('❌ DB Error: ' + error.message + ' (' + error.code + ')');
+        console.error('❌ Error saving token to Supabase:', error);
+      } else {
+        console.log('✅ Token saved to Supabase!');
+        // alert('✅ Token Saved to DB!'); // Uncomment if needed
+      }
+  } catch (err) {
+      alert('❌ DB Exception: ' + err.message);
   }
 }
 
