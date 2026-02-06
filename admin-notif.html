@@ -186,6 +186,15 @@
         box.className = `status ${type}`; // set class (success/error)
         box.style.display = 'block';
     }
+
+    // Show My ID on load
+    window.onload = function() {
+        const myId = getOrGenerateBrowserId();
+        const statsEl = document.getElementById('stats');
+        // Clean existing text to append ID
+        const currentText = statsEl.textContent; 
+        statsEl.innerHTML = currentText + `<br><small style="opacity:0.7; font-size:0.8em">My ID: ${myId}</small>`;
+    };
 </script>
 
 </body>
