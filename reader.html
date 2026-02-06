@@ -461,6 +461,35 @@
         .reply-btn:hover {
             text-decoration: underline;
         }
+        
+        .action-btn {
+            background: none;
+            border: none;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            transition: color 0.2s;
+        }
+        
+        .edit-btn {
+           color: var(--accent);
+        }
+        
+        .edit-btn:hover {
+            color: #d97706; /* darker amber */
+        }
+
+        .delete-btn {
+            color: #ef4444; /* red-500 */
+        }
+        
+        .delete-btn:hover {
+            color: #b91c1c; /* red-700 */
+        }
 
         .comment-form {
             background: var(--gray-lighter);
@@ -665,11 +694,24 @@
                     const initials = comment.author_name.substring(0, 2).toUpperCase();
                     const timeAgo = formatTimeAgo(new Date(comment.created_at));
                     
-                    // Check if current user is author to show Reply button
+                    // Check if current user is author to show Reply/Edit/Delete buttons
                     const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
                     const isAuthorUser = currentUser && currentUser.role === 'author';
-                    const replyButton = isAuthorUser ? 
-                        `<button class="reply-btn" onclick="startReply(${comment.id}, '${comment.author_name}')">Reply</button>` : '';
+                    
+                    let actionsHtml = '';
+                    if (isAuthorUser) {
+                         actionsHtml = `
+                            <button class="action-btn reply-btn" onclick="startReply(${comment.id}, '${comment.author_name}')">
+                                <i class="fas fa-reply"></i> Reply
+                            </button>
+                            <button class="action-btn edit-btn" onclick="startEdit(${comment.id})">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <button class="action-btn delete-btn" onclick="deleteCommentNode(${comment.id})">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        `;
+                    }
 
                     div.innerHTML = `
                         <div class="comment-avatar">${initials}</div>
@@ -678,12 +720,23 @@
                                 <span class="comment-author-name">${comment.author_name}</span>
                                 <span class="comment-time">${timeAgo}</span>
                             </div>
-                            <div class="comment-text">${escapeHtml(comment.content)}</div>
-                            <div class="comment-actions">
-                                ${replyButton}
+                            <div class="comment-content-wrapper" id="content-${comment.id}">
+                                <div class="comment-text">${escapeHtml(comment.content)}</div>
+                                <div class="comment-actions">
+                                    ${actionsHtml}
+                                </div>
+                            </div>
+                            <div class="edit-form" id="edit-form-${comment.id}" style="display: none; margin-top: 0.5rem;">
+                                <textarea class="edit-input" rows="2" style="width: 100%; border: 1px solid var(--gray-light); border-radius: var(--radius-sm); padding: 0.5rem;"></textarea>
+                                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                                    <button class="btn btn-sm btn-primary" onclick="saveEdit(${comment.id})">Save</button>
+                                    <button class="btn btn-sm btn-outline" onclick="cancelEdit(${comment.id})">Cancel</button>
+                                </div>
                             </div>
                         </div>
                     `;
+                    // Store content for edit
+                    div.dataset.content = comment.content;
                     return div;
                 };
 
@@ -701,6 +754,63 @@
             } catch (error) {
                 console.error('Error loading comments:', error);
                 commentsList.innerHTML = '<p class="text-center">Failed to load comments.</p>';
+            }
+        }
+        
+        // --- Actions ---
+
+        async function deleteCommentNode(id) {
+            if (!confirm('Are you sure you want to delete this comment?')) return;
+            
+            try {
+                // Optimistic removal
+                const el = document.getElementById(`comment-${id}`);
+                if (el) el.style.opacity = '0.5';
+                
+                await window.SupabaseAPI.deleteComment(id);
+                showNotification('Comment deleted');
+                loadComments(); // Refresh to be safe
+            } catch (e) {
+                alert('Failed to delete comment');
+                loadComments();
+            }
+        }
+
+        function startEdit(id) {
+            const commentEl = document.getElementById(`comment-${id}`);
+            const contentWrapper = document.getElementById(`content-${id}`);
+            const editForm = document.getElementById(`edit-form-${id}`);
+            const textarea = editForm.querySelector('textarea');
+            
+            // Populate
+            textarea.value = commentEl.dataset.content;
+            
+            // Toggle
+            contentWrapper.style.display = 'none';
+            editForm.style.display = 'block';
+        }
+
+        function cancelEdit(id) {
+            const contentWrapper = document.getElementById(`content-${id}`);
+            const editForm = document.getElementById(`edit-form-${id}`);
+            
+            contentWrapper.style.display = 'block';
+            editForm.style.display = 'none';
+        }
+
+        async function saveEdit(id) {
+            const editForm = document.getElementById(`edit-form-${id}`);
+            const textarea = editForm.querySelector('textarea');
+            const newContent = textarea.value.trim();
+            
+            if (!newContent) return alert('Comment cannot be empty');
+            
+            try {
+                await window.SupabaseAPI.updateComment(id, newContent);
+                showNotification('Comment updated');
+                loadComments();
+            } catch (e) {
+                alert('Failed to update comment');
             }
         }
         

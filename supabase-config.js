@@ -245,6 +245,47 @@ async function createComment(commentData) {
   }
 }
 
+/**
+ * Delete a comment
+ * @param {number} commentId
+ * @returns {Promise<boolean>}
+ */
+async function deleteComment(commentId) {
+  try {
+    const { error } = await window.supabaseClient
+      .from('comments')
+      .delete()
+      .eq('id', commentId);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('❌ Error deleting comment:', error);
+    return false;
+  }
+}
+
+/**
+ * Update a comment
+ * @param {number} commentId
+ * @param {string} newContent
+ * @returns {Promise<boolean>}
+ */
+async function updateComment(commentId, newContent) {
+  try {
+    const { error } = await window.supabaseClient
+      .from('comments')
+      .update({ content: newContent })
+      .eq('id', commentId);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('❌ Error updating comment:', error);
+    return false;
+  }
+}
+
 // Export functions for use in other files
 window.SupabaseAPI = {
   fetchBooks: fetchBooksFromSupabase,
@@ -256,4 +297,6 @@ window.SupabaseAPI = {
   incrementViews: incrementBookViews,
   fetchComments: fetchComments,
   createComment: createComment,
+  deleteComment: deleteComment,
+  updateComment: updateComment,
 };
