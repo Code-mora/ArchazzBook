@@ -25,6 +25,9 @@
                 <a href="#featured" class="nav-link">Featured</a>
                 <a href="#about" class="nav-link">About</a>
                 <div id="auth-buttons" class="auth-buttons">
+                    <button class="btn btn-icon" onclick="document.getElementById('notif-banner').style.display = 'flex'" title="Enable Notifications">
+                        <i class="fas fa-bell"></i>
+                    </button>
                     <button class="btn btn-outline" onclick="showLoginModal()">Author Login</button>
                 </div>
                 <div id="user-menu" class="user-menu" style="display: none;">
@@ -52,6 +55,19 @@
             </button>
         </div>
     </nav>
+
+    <!-- Notification Permission Banner (Hidden by default) -->
+    <div id="notif-banner" style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: white; padding: 15px 20px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 9999; align-items: center; gap: 15px; border: 1px solid #e2e8f0; max-width: 90%; width: 400px;">
+        <div style="font-size: 24px;">🔔</div>
+        <div style="flex: 1;">
+            <h4 style="margin: 0 0 4px; color: #1e293b; font-size: 16px;">Get Updates?</h4>
+            <p style="margin: 0; font-size: 13px; color: #64748b;">Don't miss replies or new chapters from your favorite authors.</p>
+        </div>
+        <div style="display: flex; gap: 8px;">
+            <button id="btn-dismiss-notif" style="background: none; border: none; font-size: 13px; color: #64748b; cursor: pointer; padding: 5px;">Later</button>
+            <button id="btn-allow-notif" style="background: var(--primary); color: white; border: none; padding: 6px 16px; border-radius: 20px; font-weight: 600; cursor: pointer; font-size: 13px;">Allow</button>
+        </div>
+    </div>
 
     <!-- Hero Section -->
     <section class="hero">
@@ -272,6 +288,50 @@
     <script src="supabase-config.js"></script>
     
     <!-- App Logic -->
+    <!-- App Logic -->
     <script src="app.js"></script>
+    <script type="module">
+        import { setupNotifications, getBrowserId } from './notifications.js';
+
+        const btnAllow = document.getElementById('btn-allow-notif');
+        const btnDismiss = document.getElementById('btn-dismiss-notif');
+        const banner = document.getElementById('notif-banner');
+
+        // Check if user has already made a choice
+        const notifStatus = localStorage.getItem('archazz_notif_status');
+        if (!notifStatus && Notification.permission === 'default') {
+            setTimeout(() => {
+                banner.style.display = 'flex';
+            }, 3000); // Show after 3 seconds
+        }
+
+        // --- Event Listeners ---
+
+        if (btnAllow) {
+            btnAllow.addEventListener('click', async () => {
+                banner.style.display = 'none';
+                // VAPID Key provided by user (Updated)
+                const vapidKey = 'BFkoF2BLu0eulaqu3HxgJVFMJ-hHYFPSfMGvt0Lr1PzFag39n0K6YSOQ0LHTaLg0CHHNHoJXEbXrk1j1OgSiHfI'; 
+                
+                try {
+                    const success = await setupNotifications(vapidKey);
+                    if (success) {
+                        localStorage.setItem('archazz_notif_status', 'granted');
+                        alert('✅ Notifications enabled! You will now receive updates.');
+                    }
+                } catch (err) {
+                    console.error('Setup failed:', err);
+                    alert('Failed to enable notifications. Check console for details.');
+                }
+            });
+        }
+
+        if (btnDismiss) {
+            btnDismiss.addEventListener('click', () => {
+                banner.style.display = 'none';
+                localStorage.setItem('archazz_notif_status', 'dismissed');
+            });
+        }
+    </script>
 </body>
 </html>

@@ -930,7 +930,8 @@
                     content: content,
                     author_name: authorName,
                     is_author: isAuthor,
-                    parent_id: replyToId
+                    parent_id: replyToId,
+                    browser_id: localStorage.getItem('archazz_browser_id') // Add browser_id for notification tracking
                 };
                 
                 const result = await window.SupabaseAPI.createComment(commentData);

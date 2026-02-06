@@ -300,27 +300,11 @@
             background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
         }
 
-        .chapter-info {
-            flex: 1;
-            min-width: 0;
-            overflow: hidden;
-        }
-
-        .chapter-info strong {
-            display: block;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
         .chapter-info span {
             display: block;
             font-size: 0.75rem;
             color: var(--gray);
             margin-top: 0.25rem;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
         }
 
         .chapter-actions {
@@ -551,34 +535,23 @@
             }
             
             .writer-actions {
-                gap: 0.4rem;
+                gap: 0.75rem;
                 width: 100%;
-                flex-wrap: wrap;
             }
             
             .chapter-selector {
-                font-size: 0.8125rem;
-                padding: 0.5rem;
-                flex: 0 0 auto;
-                min-width: 90px;
-                max-width: 120px;
+                font-size: 0.875rem;
+                padding: 0.5rem 0.75rem;
             }
             
             .writer-actions .btn {
-                padding: 0.5rem 0.625rem;
-                font-size: 0.75rem;
+                padding: 0.5rem 0.875rem;
+                font-size: 0.875rem;
                 white-space: nowrap;
-                flex: 1;
-                min-width: fit-content;
             }
             
             .writer-actions .btn i {
-                font-size: 0.6875rem;
-                margin-right: 0.25rem;
-            }
-            
-            .writer-actions .btn span {
-                font-size: 0.6875rem;
+                font-size: 0.8125rem;
             }
             
             .page-editor {
@@ -656,28 +629,21 @@
             }
             
             .sidebar-card {
-                padding: 1.25rem;
-                margin-bottom: 1.25rem;
+                padding: 1rem;
+                margin-bottom: 1rem;
                 width: 100%;
                 max-width: 100%;
                 margin-left: 0;
                 margin-right: 0;
-                background: white;
-                border-radius: var(--radius-lg);
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
             }
             
             .sidebar-card h3 {
-                font-size: 1rem;
-                margin-bottom: 1rem;
-                color: var(--dark);
-                font-weight: 600;
+                font-size: 0.9375rem;
+                margin-bottom: 0.75rem;
             }
             
             .stat-item {
-                padding: 0.75rem;
-                background: var(--gray-lighter);
-                border-radius: var(--radius-md);
+                padding: 0.625rem;
             }
             
             .stat-label {
@@ -685,53 +651,29 @@
             }
             
             .stat-value {
-                font-size: 1.125rem;
-                font-weight: 700;
-                color: var(--primary);
+                font-size: 1rem;
             }
             
             .chapter-item {
-                padding: 0.75rem;
-                border-radius: var(--radius-md);
-                margin-bottom: 0.5rem;
+                padding: 0.625rem;
             }
             
             .chapter-info {
-                flex: 1;
-                min-width: 0;
-                overflow: hidden;
-            }
-            
-            .chapter-info strong {
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-            }
-            
-            .chapter-info {
-                font-size: 0.9375rem;
+                font-size: 0.875rem;
             }
             
             .chapter-info span {
-                font-size: 0.75rem;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                white-space: nowrap;
+                font-size: 0.6875rem;
             }
             
             .chapter-action-btn {
-                width: 28px;
-                height: 28px;
-                font-size: 0.75rem;
+                width: 24px;
+                height: 24px;
+                font-size: 0.6875rem;
             }
             
             .chapter-list {
-                max-height: 250px;
-            }
-            
-            /* Book cover in sidebar on mobile */
-            #cover-display-card img {
-                max-width: 180px !important;
+                max-height: 200px;
             }
         }
     
@@ -801,16 +743,13 @@
                         <option value="1">Chapter 1</option>
                     </select>
                     <button class="btn btn-outline" onclick="newChapter()">
-                        <i class="fas fa-plus"></i><span> New Chapter</span>
+                        <i class="fas fa-plus"></i> New Chapter
                     </button>
-                    <button class="btn btn-outline" id="mobile-cover-btn" onclick="uploadCover()" style="display: none;">
-                        <i class="fas fa-image"></i><span> Cover</span>
+                    <button class="btn btn-outline" id="mobile-cover-btn" onclick="uploadCover()" style="display: none; flex: 1;">
+                        <i class="fas fa-image"></i> Cover
                     </button>
-                    <button class="btn btn-outline" onclick="saveBook('draft')" title="Save as Draft">
-                        <i class="fas fa-save"></i><span> Save Draft</span>
-                    </button>
-                    <button class="btn btn-primary" onclick="saveBook('published')" title="Publish to Readers">
-                        <i class="fas fa-paper-plane"></i><span> Publish</span>
+                    <button class="btn btn-primary" onclick="saveBook()">
+                        <i class="fas fa-save"></i> Save & Publish
                     </button>
                 </div>
             </div>
@@ -858,8 +797,8 @@
                 <!-- Book Cover Preview -->
                 <div class="sidebar-card" id="cover-display-card" style="display: none;">
                     <h3><i class="fas fa-image"></i> Book Cover</h3>
-                    <div style="text-align: center; padding: 0.5rem 0;">
-                        <img id="sidebar-cover-preview" src="" alt="Book cover" style="width: 100%; max-width: 200px; height: auto; aspect-ratio: 2/3; object-fit: cover; border-radius: var(--radius-md); box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+                    <div style="text-align: center;">
+                        <img id="sidebar-cover-preview" src="" alt="Book cover" style="max-width: 100%; border-radius: var(--radius-md); box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
                     </div>
                 </div>
 
@@ -896,14 +835,6 @@
         </div>
     </div>
 
-
-    <!-- Supabase Client Library -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <!-- Supabase Configuration -->
-    <script src="supabase-config.js"></script>
-    
-    <!-- App Scripts -->
     <script src="app.js"></script>
     <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
     <script src="writer.js"></script>

@@ -1,0 +1,9 @@
+{
+  "name": "archazzbook-notifications",
+  "version": "1.0.0",
+  "description": "Backend for ArchazzBook Notifications",
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^12.0.0"
+  }
+}
