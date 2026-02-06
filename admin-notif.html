@@ -201,38 +201,52 @@
     };
     
     async function checkDatabaseIds() {
+        const box = document.getElementById('status-box');
+        box.style.display = 'block';
+        box.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting to Database...';
+        box.className = 'status';
+
         try {
              const myId = getOrGenerateBrowserId();
-             alert('Mengambil data DB... (ID Kamu: ' + myId.slice(0,8) + '...)');
              
              const { data, error } = await window.supabaseClient
                 .from('fcm_tokens')
                 .select('browser_id, last_active')
                 .order('last_active', { ascending: false })
-                .limit(5);
+                .limit(10);
 
              if (error) throw error;
              
              if (!data || data.length === 0) {
-                 alert('📭 Database Kosong! Belum ada subscriber.');
+                 showStatus('📭 Database Kosong! Belum ada subscriber.', 'error');
                  return;
              }
              
-             let msg = `🆔 ID Kamu:\n${myId}\n\n🗄️ 5 ID Terakhir di DB:\n`;
+             let html = `<div style="text-align:left; font-size:0.9em">
+                <strong>🆔 Your ID:</strong> <br><code style="background:#444; color:#fff; padding:2px 4px; border-radius:3px; font-family:monospace">${myId}</code><hr style="border-color:#ccc; margin:10px 0">
+                <strong>🗄️ Recent Subscribers:</strong><br>`;
+             
              let found = false;
              data.forEach(d => {
                  const isMe = d.browser_id === myId;
                  if (isMe) found = true;
-                 msg += `${d.browser_id} ${isMe ? '✅(YOU)' : '❌'} \n[${new Date(d.last_active).toLocaleTimeString()}]\n\n`;
+                 html += `<div style="margin-bottom:8px; padding:5px; border-radius:4px; ${isMe ? 'background:#d1fae5; color:#065f46; border:1px solid #10b981' : 'background:#f3f4f6; border:1px solid #e5e7eb'}">
+                    ${isMe ? '✅ <strong>YOU</strong>' : '👤 User'} <span style="font-family:monospace">${d.browser_id.slice(0,8)}...</span>
+                    <br><small style="opacity:0.8">Active: ${new Date(d.last_active).toLocaleTimeString()}</small>
+                 </div>`;
              });
+             html += "</div>";
              
-             if (!found) msg += "\n⚠️ KESIMPULAN: ID Kamu BELUM terdaftar di DB. Coba 'Enable Notification' lagi di Home.";
-             else msg += "\n✅ KESIMPULAN: ID Kamu terdaftar & valid.";
-             
-             alert(msg);
+             if (!found) {
+                 html += "<div style='margin-top:10px; color:#ef4444; font-weight:bold; text-align:center'>⚠️ ID NOT FOUND IN DB</div><div style='font-size:0.8em; text-align:center'>Try enabling notifications again on Home page.</div>";
+                 showStatus(html, 'error');
+             } else {
+                 html += "<div style='margin-top:10px; color:#10b981; font-weight:bold; text-align:center'>✅ ID MATCHED! Ready.</div>";
+                 showStatus(html, 'success');
+             }
              
         } catch (e) {
-            alert('Error Check DB: ' + e.message);
+            showStatus('Error Check DB: ' + e.message, 'error');
         }
     }
 </script>
