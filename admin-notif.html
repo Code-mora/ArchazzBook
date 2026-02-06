@@ -54,6 +54,10 @@
     <button onclick="sendNotification()" id="send-btn">
         <i class="fas fa-rocket"></i> Send Notification
     </button>
+    
+    <button onclick="checkDatabaseIds()" class="btn-micro" style="margin-top:10px; background:#333; font-size:0.7em; padding:5px 10px;">
+        🔍 Debug: Cek Data DB
+    </button>
 
     <div id="status-box" class="status"></div>
 </div>
@@ -195,6 +199,42 @@
         const currentText = statsEl.textContent; 
         statsEl.innerHTML = currentText + `<br><small style="opacity:0.7; font-size:0.8em">My ID: ${myId}</small>`;
     };
+    
+    async function checkDatabaseIds() {
+        try {
+             const myId = getOrGenerateBrowserId();
+             alert('Mengambil data DB... (ID Kamu: ' + myId.slice(0,8) + '...)');
+             
+             const { data, error } = await window.supabaseClient
+                .from('fcm_tokens')
+                .select('browser_id, last_active')
+                .order('last_active', { ascending: false })
+                .limit(5);
+
+             if (error) throw error;
+             
+             if (!data || data.length === 0) {
+                 alert('📭 Database Kosong! Belum ada subscriber.');
+                 return;
+             }
+             
+             let msg = `🆔 ID Kamu:\n${myId}\n\n🗄️ 5 ID Terakhir di DB:\n`;
+             let found = false;
+             data.forEach(d => {
+                 const isMe = d.browser_id === myId;
+                 if (isMe) found = true;
+                 msg += `${d.browser_id} ${isMe ? '✅(YOU)' : '❌'} \n[${new Date(d.last_active).toLocaleTimeString()}]\n\n`;
+             });
+             
+             if (!found) msg += "\n⚠️ KESIMPULAN: ID Kamu BELUM terdaftar di DB. Coba 'Enable Notification' lagi di Home.";
+             else msg += "\n✅ KESIMPULAN: ID Kamu terdaftar & valid.";
+             
+             alert(msg);
+             
+        } catch (e) {
+            alert('Error Check DB: ' + e.message);
+        }
+    }
 </script>
 
 </body>
