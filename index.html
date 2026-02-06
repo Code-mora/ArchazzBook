@@ -307,52 +307,7 @@
     <!-- App Logic -->
     <!-- App Logic -->
     <script src="app.js"></script>
-    <script type="module">
-        import { setupNotifications, getBrowserId } from './notifications.js';
-
-        const btnAllow = document.getElementById('btn-allow');
-        const btnDismiss = document.getElementById('btn-dismiss');
-        const banner = document.getElementById('notification-banner');
-
-        // DEBUG: Check if elements exist
-        // alert('DEBUG INIT: Button found? ' + (btnAllow ? 'YES' : 'NO'));
-
-        // Check if user has already made a choice
-        const notifStatus = localStorage.getItem('archazz_notif_status');
-        if (!notifStatus && Notification.permission === 'default') {
-            setTimeout(() => {
-                banner.style.display = 'flex';
-            }, 3000); // Show after 3 seconds
-        }
-
-        // --- Event Listeners ---
-
-        if (btnAllow) {
-            btnAllow.addEventListener('click', async () => {
-                alert('🖱️ CLICK DETECTED! Starting setup...');
-                banner.style.display = 'none';
-                // VAPID Key provided by user (Updated)
-                const vapidKey = 'BFkoF2BLu0eulaqu3HxgJVFMJ-hHYFPSfMGvt0Lr1PzFag39n0K6YSOQ0LHTaLg0CHHNHoJXEbXrk1j1OgSiHfI'; 
-                
-                try {
-                    const success = await setupNotifications(vapidKey);
-                    if (success) {
-                        localStorage.setItem('archazz_notif_status', 'granted');
-                        alert('✅ Notifications enabled! You will now receive updates.');
-                    }
-                } catch (err) {
-                    console.error('Setup failed:', err);
-                    alert('Failed to enable notifications. Check console for details.');
-                }
-            });
-        }
-
-        if (btnDismiss) {
-            btnDismiss.addEventListener('click', () => {
-                banner.style.display = 'none';
-                localStorage.setItem('archazz_notif_status', 'dismissed');
-            });
-        }
-    </script>
+    <!-- Notifications Script (Contains logic & UI handling) -->
+    <script type="module" src="notifications.js"></script>
 </body>
 </html>

@@ -174,3 +174,48 @@ window.NotifManager = {
   setup: setupNotifications,
   getBrowserId: getBrowserId
 };
+
+// AUTO-ATTACH Listener (To avoid inline script issues)
+console.log('📜 Notifications Script Loaded. Looking for buttons...');
+const btnAllow = document.getElementById('btn-allow');
+const btnDismiss = document.getElementById('btn-dismiss');
+const banner = document.getElementById('notification-banner');
+
+if (btnAllow) {
+  console.log('✅ Found Allow Button. Attaching listener...');
+  btnAllow.addEventListener('click', async () => {
+      alert('🖱️ CLICK DETECTED (from module)!');
+      if (banner) banner.style.display = 'none';
+      
+      // VAPID Key provided by user (Updated)
+      const vapidKey = 'BFkoF2BLu0eulaqu3HxgJVFMJ-hHYFPSfMGvt0Lr1PzFag39n0K6YSOQ0LHTaLg0CHHNHoJXEbXrk1j1OgSiHfI'; 
+      
+      try {
+          const success = await setupNotifications(vapidKey);
+          if (success) {
+              localStorage.setItem('archazz_notif_status', 'granted');
+              alert('✅ Notifications enabled! You will now receive updates.');
+          }
+      } catch (err) {
+          console.error('Setup failed:', err);
+          alert('Failed to enable notifications. Check console for details.');
+      }
+  });
+} else {
+  console.log('⚠️ Allow Button NOT found (yet).');
+}
+
+if (btnDismiss) {
+  btnDismiss.addEventListener('click', () => {
+      if (banner) banner.style.display = 'none';
+      localStorage.setItem('archazz_notif_status', 'dismissed');
+  });
+}
+
+// Show banner logic
+const notifStatus = localStorage.getItem('archazz_notif_status');
+if (!notifStatus && Notification.permission === 'default' && banner) {
+    setTimeout(() => {
+        banner.style.display = 'flex';
+    }, 3000); 
+}
