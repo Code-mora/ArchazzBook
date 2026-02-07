@@ -174,12 +174,26 @@
         }
     }
 
-    // Helper to generate ID if missing (copied from notifications.js)
+    // Helper to generate ID if missing (with polyfill for older browsers)
     function getOrGenerateBrowserId() {
         let bid = localStorage.getItem('archazz_browser_id');
         if (!bid) {
-            bid = crypto.randomUUID();
-            localStorage.setItem('archazz_browser_id', bid);
+            try {
+                if (crypto && crypto.randomUUID) {
+                    bid = crypto.randomUUID();
+                } else {
+                    // Polyfill
+                    bid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                        const r = Math.random() * 16 | 0;
+                        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                        return v.toString(16);
+                    });
+                }
+                localStorage.setItem('archazz_browser_id', bid);
+            } catch (e) {
+                bid = 'fallback-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('archazz_browser_id', bid);
+            }
         }
         return bid;
     }

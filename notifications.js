@@ -19,10 +19,32 @@ const messaging = getMessaging(app);
 export function getBrowserId() {
   let bid = localStorage.getItem('archazz_browser_id');
   if (!bid) {
-    bid = crypto.randomUUID();
-    localStorage.setItem('archazz_browser_id', bid);
+    try {
+      // Try modern crypto API first
+      if (crypto && crypto.randomUUID) {
+        bid = crypto.randomUUID();
+      } else {
+        // Fallback for older browsers
+        bid = generateUUIDFallback();
+      }
+      localStorage.setItem('archazz_browser_id', bid);
+    } catch (e) {
+      console.error('Error generating UUID:', e);
+      // Last resort: timestamp-based ID
+      bid = 'fallback-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('archazz_browser_id', bid);
+    }
   }
   return bid;
+}
+
+// UUID v4 Polyfill for older browsers
+function generateUUIDFallback() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
 }
 
 // 2b. Helper: Hard Reset Service Worker & Token & Cache
@@ -203,46 +225,78 @@ if (window.location.search.includes('reset=true')) {
 }
 
 // AUTO-ATTACH Listener (To avoid inline script issues)
-console.log('📜 Notifications Script Loaded. Looking for buttons...');
-const btnAllow = document.getElementById('btn-allow');
-const btnDismiss = document.getElementById('btn-dismiss');
-const banner = document.getElementById('notification-banner');
+// Wait for DOM and Supabase to be ready
+function initNotificationUI() {
+    console.log('📜 Notifications Script Loaded. Looking for buttons...');
+    const btnAllow = document.getElementById('btn-allow');
+    const btnDismiss = document.getElementById('btn-dismiss');
+    const banner = document.getElementById('notification-banner');
 
-if (btnAllow) {
-  console.log('✅ Found Allow Button. Attaching listener...');
-  btnAllow.addEventListener('click', async () => {
-      // alert('🖱️ CLICK DETECTED (from module)!'); // Removed debug
-      if (banner) banner.style.display = 'none';
-      
-      // VAPID Key provided by user (Updated)
-      const vapidKey = 'BFkoF2BLu0eulaqu3HxgJVFMJ-hHYFPSfMGvt0Lr1PzFag39n0K6YSOQ0LHTaLg0CHHNHoJXEbXrk1j1OgSiHfI'; 
-      
-      try {
-          const success = await setupNotifications(vapidKey);
-          if (success) {
-              localStorage.setItem('archazz_notif_status', 'granted');
-              alert('✅ Notifications enabled! You will now receive updates.');
-          }
-      } catch (err) {
-          console.error('Setup failed:', err);
-          alert('Failed to enable notifications. Check console for details.');
-      }
-  });
-} else {
-  console.log('⚠️ Allow Button NOT found (yet).');
-}
+    // Check if Supabase is ready (it should be loaded before this module)
+    if (!window.supabaseClient) {
+        console.warn('⚠️ Supabase not ready yet, retrying in 100ms...');
+        setTimeout(initNotificationUI, 100);
+        return;
+    }
+    
+    console.log('✅ Supabase client ready!');
 
-if (btnDismiss) {
-  btnDismiss.addEventListener('click', () => {
-      if (banner) banner.style.display = 'none';
-      localStorage.setItem('archazz_notif_status', 'dismissed');
-  });
-}
+    if (btnAllow) {
+        console.log('✅ Found Allow Button. Attaching listener...');
+        btnAllow.addEventListener('click', async () => {
+            // Don't hide banner immediately - wait for result
+            
+            // VAPID Key provided by user (Updated)
+            const vapidKey = 'BFkoF2BLu0eulaqu3HxgJVFMJ-hHYFPSfMGvt0Lr1PzFag39n0K6YSOQ0LHTaLg0CHHNHoJXEbXrk1j1OgSiHfI'; 
+            
+            try {
+                const success = await setupNotifications(vapidKey);
+                if (success) {
+                    // Success - hide banner and mark as granted
+                    if (banner) banner.style.display = 'none';
+                    localStorage.setItem('archazz_notif_status', 'granted');
+                    alert('✅ Notifications enabled! You will now receive updates.');
+                } else {
+                    // Failed but no error thrown (e.g., user denied permission)
+                    if (banner) banner.style.display = 'none';
+                    localStorage.setItem('archazz_notif_status', 'denied');
+                    alert('❌ Notification permission was denied. You can enable it later in browser settings.');
+                }
+            } catch (err) {
+                console.error('Setup failed:', err);
+                // Keep banner visible on error so user can retry
+                alert('⚠️ Setup failed: ' + err.message + '. Please try again.');
+            }
+        });
+    } else {
+        console.log('⚠️ Allow Button NOT found (yet).');
+    }
 
-// Show banner logic
-const notifStatus = localStorage.getItem('archazz_notif_status');
-if (!notifStatus && Notification.permission === 'default' && banner) {
-    setTimeout(() => {
-        banner.style.display = 'flex';
-    }, 3000); 
-}
+    if (btnDismiss) {
+        btnDismiss.addEventListener('click', () => {
+            if (banner) banner.style.display = 'none';
+            localStorage.setItem('archazz_notif_status', 'dismissed');
+        });
+    }
+
+    // Show banner logic - improved to handle edge cases
+    const notifStatus = localStorage.getItem('archazz_notif_status');
+    const permission = typeof Notification !== 'undefined' ? Notification.permission : 'default';
+
+    // Show banner if:
+    // 1. User hasn't made a choice yet (no status in localStorage)
+    // 2. OR user previously dismissed but permission is still default (give another chance)
+    const shouldShow = (!notifStatus || (notifStatus === 'dismissed' && permission === 'default')) 
+                       && permission !== 'granted' 
+                       && permission !== 'denied'
+                       && banner;
+
+    if (shouldShow) {
+        setTimeout(() => {
+            banner.style.display = 'flex';
+        }, 3000); 
+    }
+} // End initNotificationUI
+
+// Start initialization
+initNotificationUI();
