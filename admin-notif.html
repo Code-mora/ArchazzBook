@@ -144,8 +144,16 @@
                         })
                     });
 
+
+                    // Check response status before parsing JSON
+                    if (!response.ok) {
+                        console.error('HTTP Error:', response.status, response.statusText);
+                        failCount++;
+                        continue;
+                    }
+
                     const result = await response.json();
-                    if (response.ok && result.success) {
+                    if (result.success) {
                         successCount++;
                     } else {
                         console.error('API Error:', result);
