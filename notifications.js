@@ -244,7 +244,10 @@ function initNotificationUI() {
     if (btnAllow) {
         console.log('✅ Found Allow Button. Attaching listener...');
         btnAllow.addEventListener('click', async () => {
-            // Don't hide banner immediately - wait for result
+            // Disable button and show loading state
+            btnAllow.disabled = true;
+            const originalText = btnAllow.innerHTML;
+            btnAllow.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Setting up...';
             
             // VAPID Key provided by user (Updated)
             const vapidKey = 'BFkoF2BLu0eulaqu3HxgJVFMJ-hHYFPSfMGvt0Lr1PzFag39n0K6YSOQ0LHTaLg0CHHNHoJXEbXrk1j1OgSiHfI'; 
@@ -252,19 +255,27 @@ function initNotificationUI() {
             try {
                 const success = await setupNotifications(vapidKey);
                 if (success) {
-                    // Success - hide banner and mark as granted
-                    if (banner) banner.style.display = 'none';
+                    // Success - hide banner with animation and mark as granted
+                    if (banner) {
+                        banner.classList.add('hiding');
+                        setTimeout(() => banner.style.display = 'none', 300);
+                    }
                     localStorage.setItem('archazz_notif_status', 'granted');
                     alert('✅ Notifications enabled! You will now receive updates.');
                 } else {
                     // Failed but no error thrown (e.g., user denied permission)
-                    if (banner) banner.style.display = 'none';
+                    if (banner) {
+                        banner.classList.add('hiding');
+                        setTimeout(() => banner.style.display = 'none', 300);
+                    }
                     localStorage.setItem('archazz_notif_status', 'denied');
                     alert('❌ Notification permission was denied. You can enable it later in browser settings.');
                 }
             } catch (err) {
                 console.error('Setup failed:', err);
-                // Keep banner visible on error so user can retry
+                // Restore button state on error so user can retry
+                btnAllow.disabled = false;
+                btnAllow.innerHTML = originalText;
                 alert('⚠️ Setup failed: ' + err.message + '. Please try again.');
             }
         });
@@ -274,7 +285,10 @@ function initNotificationUI() {
 
     if (btnDismiss) {
         btnDismiss.addEventListener('click', () => {
-            if (banner) banner.style.display = 'none';
+            if (banner) {
+                banner.classList.add('hiding');
+                setTimeout(() => banner.style.display = 'none', 300);
+            }
             localStorage.setItem('archazz_notif_status', 'dismissed');
         });
     }
