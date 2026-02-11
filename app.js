@@ -252,10 +252,11 @@ function createBookCard(book) {
     const dateValue = book.date || book.created_at || new Date().toISOString();
     const genre = book.genre || 'General';
     const pages = book.pages || '?';
+    const coverImage = book.cover_url || book.cover || 'https://via.placeholder.com/150x200?text=No+Cover';
     
     card.innerHTML = `
         <div class="book-cover-container">
-            <img src="${book.cover}" alt="${book.title}" loading="lazy">
+            <img src="${coverImage}" alt="${book.title}" loading="lazy" onerror="this.src='https://via.placeholder.com/150x200?text=No+Cover'">
             <span class="genre-badge">${genre}</span>
         </div>
         <div class="book-info">
@@ -348,7 +349,8 @@ async function showBookDetails(bookId) {
   const book = books.find((b) => b.id === bookId);
   if (!book) return;
 
-  document.getElementById('modal-book-cover').src = book.cover_url || book.cover;
+  const coverImage = book.cover_url || book.cover || 'https://via.placeholder.com/150x200?text=No+Cover';
+  document.getElementById('modal-book-cover').src = coverImage;
   document.getElementById('modal-book-title').textContent = book.title;
   document.getElementById('modal-book-author').textContent =
     book.author_name || book.author || 'Archazz';
