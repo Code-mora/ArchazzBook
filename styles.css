@@ -899,14 +899,23 @@ body {
     inset: 0;
     background: rgba(0, 0, 0, 0.7);
     backdrop-filter: blur(5px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
     z-index: 2000;
     opacity: 0;
     visibility: hidden;
     transition: all var(--transition-normal);
-    padding: 2rem;
+    padding: 0;
+    display: block;
+    overflow-y: auto;
+    text-align: center;
+}
+
+/* Helper to center content vertically */
+.modal::before {
+    content: "";
+    display: inline-block;
+    height: 100%;
+    vertical-align: middle;
+    margin-right: -0.25em;
 }
 
 .modal.active {
@@ -914,7 +923,31 @@ body {
     visibility: visible;
 }
 
+/* Helper to center the content */
+.modal::before {
+    content: "";
+    display: inline-block;
+    height: 100%;
+    vertical-align: middle;
+    margin-right: -0.25em;
+}
+
+@media (max-width: 768px) {
+    .modal {
+        padding: 0;
+    }
+    
+    .modal-content {
+         padding: 1.5rem;
+         width: 95%; /* ensure some margin on sides */
+         margin: 2rem 0; /* Vertical margin to allow scrolling */
+    }
+}
+
 .modal-content {
+    display: inline-block;
+    vertical-align: middle;
+    text-align: left;
     background: white;
     border-radius: var(--radius-xl);
     padding: 3rem;
@@ -923,6 +956,8 @@ body {
     position: relative;
     transform: scale(0.9);
     transition: transform var(--transition-normal);
+    /* Remove max-height and internal scroll, let the page scroll */
+    margin: 2rem auto;
 }
 
 .modal.active .modal-content {
