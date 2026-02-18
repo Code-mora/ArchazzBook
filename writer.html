@@ -39,9 +39,9 @@
                 /* Auto flow to grid cell */
             }
 
-            .writer-actions .btn-primary {
-                grid-column: 1 / -1; /* Row 3 Full Width */
-            }
+            /* .writer-actions .btn-primary {
+                grid-column: 1 / -1; 
+            } Removed to allow side-by-side buttons */
             
             .writer-actions .btn {
                 width: 100%;
@@ -783,8 +783,11 @@
                     <button class="btn btn-outline" id="mobile-cover-btn" onclick="uploadCover()" style="display: none; flex: 1;">
                         <i class="fas fa-image"></i> <span class="btn-text">Cover</span>
                     </button>
-                    <button class="btn btn-primary" onclick="saveBook()">
-                        <i class="fas fa-save"></i> <span class="btn-text">Save & Publish</span>
+                    <button class="btn btn-outline" onclick="saveBook('draft')" title="Save as Draft">
+                        <i class="fas fa-save"></i> <span class="btn-text">Save Draft</span>
+                    </button>
+                    <button class="btn btn-primary" onclick="saveBook('published')" title="Publish to Readers">
+                        <i class="fas fa-upload"></i> <span class="btn-text">Publish</span>
                     </button>
                 </div>
             </div>

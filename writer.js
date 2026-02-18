@@ -676,14 +676,14 @@ function stripHtml(html) {
 // SAVE & PUBLISH
 // =============================
 
-async function saveBook() {
+async function saveBook(status = 'draft') {
   // Validate
   if (!currentBook.title || currentBook.title.trim() === '') {
     alert('Please enter a book title');
     return;
   }
 
-  if (!currentBook.cover) {
+  if (!currentBook.cover && status === 'published') {
     if (!confirm('No cover image uploaded. Continue without cover?')) {
       // Allow user to cancel saving if no cover
       return;
@@ -702,7 +702,8 @@ async function saveBook() {
   });
 
   // Show saving notification
-  showNotification('Saving book...');
+  const actionText = status === 'published' ? 'Publishing' : 'Saving draft';
+  showNotification(`${actionText}...`);
 
   try {
     let coverUrl = currentBook.cover; // Keep existing cover URL or base64
@@ -738,6 +739,7 @@ async function saveBook() {
       preview: generatePreview(),
       cover_url: coverUrl,
       chapters: currentBook.chapters, // Store as JSONB
+      status: status // 'draft' or 'published'
     };
 
     let savedBook;
@@ -768,6 +770,7 @@ async function saveBook() {
       pages: totalPages,
       preview: bookData.preview,
       cover: coverUrl,
+      status: status
     };
 
     let books = getBooksFromStorage();
@@ -790,7 +793,8 @@ async function saveBook() {
     console.log('Total books in storage:', books.length);
 
     // Show success
-    showNotification('✅ Book published successfully!');
+    const successMsg = status === 'published' ? '✅ Book published successfully!' : '✅ Draft saved successfully!';
+    showNotification(successMsg);
 
     // Redirect to dashboard after a moment
     setTimeout(() => {
