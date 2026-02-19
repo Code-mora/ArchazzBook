@@ -686,6 +686,11 @@
         let currentBook = null;
 
         document.addEventListener('DOMContentLoaded', function() {
+            // Get current user for auth checks
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                window.currentUser = JSON.parse(savedUser);
+            }
             loadBook();
         });
 
@@ -1053,12 +1058,32 @@
         }
 
         function loadChapterBasedBook() {
+            // Filter chapters if not author
+            if (!currentUser || currentUser.role !== 'author') {
+                // If user is not author, only show published chapters
+                // Handle legacy chapters (no status) as published
+                currentBook.chapters = currentBook.chapters.filter(c => !c.status || c.status === 'published');
+            }
+            
+            if (currentBook.chapters.length === 0) {
+                document.getElementById('story-content').innerHTML = `
+                    <div style="text-align: center; padding: 3rem;">
+                        <i class="fas fa-book-open" style="font-size: 3rem; color: var(--gray); margin-bottom: 1rem;"></i>
+                        <h3>No published chapters yet</h3>
+                        <p>The author hasn't published any chapters for this book yet. Check back later!</p>
+                    </div>
+                `;
+                document.getElementById('page-info').style.display = 'none';
+                return;
+            }
+
             // Start with first chapter
             currentChapterId = currentBook.chapters[0].id;
             
             // Add chapter selector if multiple chapters
             if (currentBook.chapters.length > 1) {
-                addChapterSelector();
+                // We need to pass the filtered chapters or ensure logic uses currentBook.chapters
+                addChapterSelector(); 
             }
             
             displayChapter(currentChapterId);
@@ -1127,7 +1152,17 @@
             
             // Display content
             const storyContent = document.getElementById('story-content');
-            storyContent.innerHTML = `<h2>${chapter.title}</h2>` + page.content;
+            let contentHtml = '';
+            
+            // Add draft badge if needed
+            if (currentUser && currentUser.role === 'author' && chapter.status === 'draft') {
+                contentHtml += `<div style="background: #fffeb3; color: #b45309; padding: 0.5rem; text-align: center; border-radius: var(--radius-sm); margin-bottom: 2rem; font-family: var(--font-primary); font-size: 0.875rem; font-weight: 600;">
+                    <i class="fas fa-eye-slash"></i> DRAFT - Only visible to you
+                </div>`;
+            }
+            
+            contentHtml += `<h2>${chapter.title}</h2>` + page.content;
+            storyContent.innerHTML = contentHtml;
             
             // Update page info
             const totalPagesInChapter = chapter.pages.length;

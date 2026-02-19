@@ -292,6 +292,7 @@ function newChapter() {
   const newChapter = {
     id: newChapterId,
     title: chapterTitle,
+    status: 'draft', // New chapters are drafts by default
     pages: [
       {
         id: Date.now() + 1,
@@ -676,33 +677,78 @@ function stripHtml(html) {
 // SAVE & PUBLISH
 // =============================
 
-async function saveBook(status = 'draft') {
+async function saveBook(action = 'draft') {
   // Validate
   if (!currentBook.title || currentBook.title.trim() === '') {
     alert('Please enter a book title');
     return;
   }
 
-  if (!currentBook.cover && status === 'published') {
-    if (!confirm('No cover image uploaded. Continue without cover?')) {
-      // Allow user to cancel saving if no cover
-      return;
-    }
-  }
-
-  // Save all current page contents
+  // Save all current page contents (for all chapters, or just current?)
+  // Ideally we save everything
   pageEditors.forEach((editor, pageId) => {
     savePageContent(pageId);
   });
 
-  // Calculate total pages for backward compatibility
+  // Calculate total pages
   let totalPages = 0;
+  
+  // Logic for per-chapter status:
+  // 1. Identify current chapter
+  const chapterIndex = currentBook.chapters.findIndex(c => c.id === currentChapterId);
+  
+  if (chapterIndex !== -1) {
+      if (action === 'published') {
+          // If User clicks "Publish", the current chapter becomes published
+          currentBook.chapters[chapterIndex].status = 'published';
+      } else {
+          // If User clicks "Save Draft", the current chapter stays draft OR becomes draft?
+          // If it was already published, and they click 'Save Draft', it's ambiguous.
+          // Usually 'Save Draft' means "Don't publish changes yet".
+          // BUT if the user explicitly wants to DRAFT a chapter, we set it to draft.
+          // For now, let's assume 'Save Draft' keeps it as draft if it was draft, 
+          // or sets it to draft if it's new.
+          // If it was ALREADY published, does clicking 'Save Draft' unpublish it? 
+          // The user scenario: "chapter 2 ini gw masih belum selesai nulisnya, otomatis kan pasti gw draft"
+          // This implies setting the status to draft.
+          
+          // However, we should be careful about accidentally unpublishing. 
+          // Let's assume the button strictly sets the status of the CURRENT chapter.
+          currentBook.chapters[chapterIndex].status = 'draft';
+      }
+  }
+
+  // 2. Determine Overall Book Status
+  // If ANY chapter is published, the book is considered 'published' (visible in library)
+  // But strictly, the book status column in DB might control visibility of the *book card*.
+  // If book has 0 published chapters, maybe it should be draft?
+  // Let's check if there is AT LEAST ONE published chapter.
+  const hasPublishedChapter = currentBook.chapters.some(c => c.status === 'published' || !c.status); // !c.status handles legacy chapters (assumed published)
+  
+  // If action is 'published', we definitely want the book to be visible.
+  // If action is 'draft', but we have other published chapters, book remains visible.
+  // If action is 'draft' and NO chapters are published, book is draft.
+  
+  let bookStatus = 'draft';
+  if (hasPublishedChapter) {
+      bookStatus = 'published';
+  }
+  
+  // Validation for cover if publishing the book for the first time or if it's visible
+  if (!currentBook.cover && bookStatus === 'published') {
+    if (!confirm('No cover image uploaded. Continue without cover?')) {
+      return;
+    }
+  }
+
   currentBook.chapters.forEach((chapter) => {
+    // Ensure all chapters have a status property if missing (legacy compatibility)
+    if (!chapter.status) chapter.status = 'published'; 
     totalPages += chapter.pages.length;
   });
 
   // Show saving notification
-  const actionText = status === 'published' ? 'Publishing' : 'Saving draft';
+  const actionText = action === 'published' ? 'Publishing chapter' : 'Saving draft';
   showNotification(`${actionText}...`);
 
   try {
@@ -726,7 +772,6 @@ async function saveBook(status = 'draft') {
         console.log('✅ Cover uploaded to Supabase:', coverUrl);
       } catch (uploadError) {
         console.error('⚠️ Failed to upload cover to Supabase:', uploadError);
-        // Continue with base64 cover if upload fails (though likely to fail later if too big)
       }
     }
 
@@ -738,8 +783,8 @@ async function saveBook(status = 'draft') {
       pages: totalPages,
       preview: generatePreview(),
       cover_url: coverUrl,
-      chapters: currentBook.chapters, // Store as JSONB
-      status: status // 'draft' or 'published'
+      chapters: currentBook.chapters, // Store with statuses
+      status: bookStatus // Calculated status
     };
 
     let savedBook;
@@ -770,7 +815,7 @@ async function saveBook(status = 'draft') {
       pages: totalPages,
       preview: bookData.preview,
       cover: coverUrl,
-      status: status
+      status: bookStatus
     };
 
     let books = getBooksFromStorage();
@@ -793,7 +838,8 @@ async function saveBook(status = 'draft') {
     console.log('Total books in storage:', books.length);
 
     // Show success
-    const successMsg = status === 'published' ? '✅ Book published successfully!' : '✅ Draft saved successfully!';
+    const currChapterTitle = currentBook.chapters[chapterIndex] ? currentBook.chapters[chapterIndex].title : 'Chapter';
+    const successMsg = action === 'published' ? `✅ ${currChapterTitle} published!` : `✅ ${currChapterTitle} saved as draft!`;
     showNotification(successMsg);
 
     // Redirect to dashboard after a moment
