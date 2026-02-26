@@ -129,21 +129,22 @@ async function checkEditMode() {
 async function loadExistingBook(bookId) {
   let book = null;
   
-  // 1. Try Local Storage first
-  const localBooks = getBooksFromStorage();
-  // Use loose equality (==) to match string "123" with number 123
-  book = localBooks.find((b) => b.id == bookId);
-
-  // 2. If not found locally, try Supabase
-  if (!book && window.SupabaseAPI) {
+  // 1. Try Supabase first (to ensure we get the latest cloud updates, like drafts from other devices)
+  if (window.SupabaseAPI) {
     try {
-      console.log(`🔍 Book ${bookId} not in local storage. Fetching from Supabase...`);
-      const sbBooks = await window.SupabaseAPI.fetchBooks(); 
-      // Use loose equality (==) here too
+      console.log(`🔍 Fetching book ${bookId} from Supabase...`);
+      const sbBooks = await window.SupabaseAPI.fetchBooks();
       book = sbBooks.find(b => b.id == bookId);
     } catch (err) {
       console.error('❌ Error fetching from Supabase:', err);
     }
+  }
+
+  // 2. If not found in Supabase (or offline), try Local Storage
+  if (!book) {
+    console.log(`📦 Book ${bookId} not found in cloud or offline, trying local storage...`);
+    const localBooks = getBooksFromStorage();
+    book = localBooks.find((b) => b.id == bookId);
   }
 
   if (!book) {
@@ -269,6 +270,14 @@ function initializeWriter() {
       mobileCoverBtn.style.display = window.innerWidth <= 768 ? 'flex' : 'none';
     }
   });
+
+  // Auto-save every 15 seconds
+  setInterval(() => {
+    // Only auto-save if we have a title and it's not totally empty
+    if (currentBook.title && currentBook.title.trim() !== '') {
+      saveBook('draft', true);
+    }
+  }, 15000);
 }
 
 // =============================
@@ -677,10 +686,10 @@ function stripHtml(html) {
 // SAVE & PUBLISH
 // =============================
 
-async function saveBook(action = 'draft') {
+async function saveBook(action = 'draft', isAutoSave = false) {
   // Validate
   if (!currentBook.title || currentBook.title.trim() === '') {
-    alert('Please enter a book title');
+    if (!isAutoSave) alert('Please enter a book title');
     return;
   }
 
@@ -735,7 +744,7 @@ async function saveBook(action = 'draft') {
   }
   
   // Validation for cover if publishing the book for the first time or if it's visible
-  if (!currentBook.cover && bookStatus === 'published') {
+  if (!currentBook.cover && bookStatus === 'published' && !isAutoSave) {
     if (!confirm('No cover image uploaded. Continue without cover?')) {
       return;
     }
@@ -748,8 +757,14 @@ async function saveBook(action = 'draft') {
   });
 
   // Show saving notification
-  const actionText = action === 'published' ? 'Publishing chapter' : 'Saving draft';
-  showNotification(`${actionText}...`);
+  if (!isAutoSave) {
+    const actionText = action === 'published' ? 'Publishing chapter' : 'Saving draft';
+    showNotification(`${actionText}...`);
+  } else {
+    // Show subtle auto-save indicator in header
+    const titleEl = document.getElementById('book-title');
+    if (titleEl) titleEl.style.borderRight = '3px solid #10b981'; // green indicator
+  }
 
   try {
     let coverUrl = currentBook.cover; // Keep existing cover URL or base64
@@ -799,6 +814,14 @@ async function saveBook(action = 'draft') {
         // Create new book
         console.log('📝 Creating new book in Supabase...');
         savedBook = await window.SupabaseAPI.createBook(bookData);
+        if (savedBook && savedBook.id) {
+            isEditMode = true;
+            editingBookId = savedBook.id;
+            // Update URL cleanly without reloading so refresh doesn't recreate either
+            const newUrl = new URL(window.location);
+            newUrl.searchParams.set('id', savedBook.id);
+            window.history.pushState({}, '', newUrl);
+        }
       }
       
       console.log('✅ Book saved to Supabase successfully');
@@ -834,8 +857,16 @@ async function saveBook(action = 'draft') {
     saveBooksToStorage(books);
 
     // Debug log
-    console.log('Book saved:', localStorageData);
-    console.log('Total books in storage:', books.length);
+    console.log('Book saved:', localStorageData.title);
+    
+    if (isAutoSave) {
+      // Remove subtle indicator
+      setTimeout(() => {
+        const titleEl = document.getElementById('book-title');
+        if (titleEl) titleEl.style.borderRight = 'none';
+      }, 1000);
+      return; // Skip redirect
+    }
 
     // Show success
     const currChapterTitle = currentBook.chapters[chapterIndex] ? currentBook.chapters[chapterIndex].title : 'Chapter';
