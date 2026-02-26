@@ -1058,8 +1058,12 @@
         }
 
         function loadChapterBasedBook() {
-            // Filter chapters if not author
-            if (!currentUser || currentUser.role !== 'author') {
+            // Check for explicit preview mode in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const isPreviewMode = urlParams.get('preview') === 'true';
+
+            // Filter chapters if not author AND not in preview mode
+            if (!isPreviewMode && (!currentUser || currentUser.role !== 'author')) {
                 // If user is not author, only show published chapters
                 // Handle legacy chapters (no status) as published
                 currentBook.chapters = currentBook.chapters.filter(c => !c.status || c.status === 'published');
