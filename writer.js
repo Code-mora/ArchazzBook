@@ -193,6 +193,15 @@ async function loadExistingBook(bookId) {
     };
   }
 
+  // CRITICAL: Set currentChapterId to the actual first chapter's ID.
+  // Without this, getCurrentChapter() returns undefined because it looks for id=1
+  // while chapters from Supabase may have timestamp IDs (e.g. 1740123456789).
+  // This caused: renderCurrentChapter() crashes → empty editor → content lost on save.
+  if (currentBook.chapters && currentBook.chapters.length > 0) {
+    currentChapterId = currentBook.chapters[0].id;
+    console.log('✅ Set currentChapterId to:', currentChapterId, '(chapter:', currentBook.chapters[0].title, ')');
+  }
+
   document.getElementById('book-title').value = currentBook.title;
 
   // Load genre if exists
