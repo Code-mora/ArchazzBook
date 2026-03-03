@@ -66,19 +66,19 @@ function saveBooksToStorage(booksData) {
   }
 }
 
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', async function () {
   // Check authentication
   checkWriterAuth();
 
-  // Check if editing existing book
-  checkEditMode();
+  // CRITICAL: Await checkEditMode so Supabase data is loaded BEFORE rendering
+  // Previously this was not awaited, causing a race condition on slow mobile connections
+  // where the UI rendered with empty default data before cloud data arrived.
+  await checkEditMode();
 
-  // Initialize
-  setTimeout(() => {
-    initializeWriter();
-    updateStats();
-    renderChapterList();
-  }, 100);
+  // Now that book data is loaded from Supabase (if in edit mode), safely render UI
+  initializeWriter();
+  updateStats();
+  renderChapterList();
 });
 
 // =============================
@@ -183,8 +183,14 @@ async function loadExistingBook(bookId) {
       ],
     };
   } else {
-    // New format
-    currentBook = book;
+    // New format - normalize Supabase field names to writer's expected format
+    currentBook = {
+      ...book,
+      // Supabase uses 'cover_url', writer uses 'cover'
+      cover: book.cover || book.cover_url || null,
+      // Supabase uses 'author_name', writer uses 'author'
+      author: book.author || book.author_name || 'Archazz',
+    };
   }
 
   document.getElementById('book-title').value = currentBook.title;
@@ -195,9 +201,11 @@ async function loadExistingBook(bookId) {
   }
 
   // Load and display existing cover
-  if (currentBook.cover) {
+  const existingCover = currentBook.cover || currentBook.cover_url;
+  if (existingCover) {
+    currentBook.cover = existingCover; // normalize
     // Display in modal (for upload flow)
-    document.getElementById('preview-img').src = currentBook.cover;
+    document.getElementById('preview-img').src = existingCover;
     document.getElementById('cover-preview').style.display = 'flex';
     
     // Display in sidebar
