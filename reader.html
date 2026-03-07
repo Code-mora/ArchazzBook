@@ -919,10 +919,10 @@
             const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
             const isAuthor = currentUser && currentUser.role === 'author';
             
-            // Random name for anon, or 'Malatie' for author
+            // Random name for anon, or 'Archazz' for author
             let authorName = 'Anonymous';
             if (isAuthor) {
-                authorName = 'Malatie'; // Or currentUser.name
+                authorName = 'Archazz'; // Or currentUser.name
             } else {
                 const adjectives = ['Happy', 'Curious', 'Quiet', 'Loud', 'Mystery', 'Brave'];
                 const animals = ['Reader', 'Bookworm', 'Cat', 'Owl', 'Fox', 'Panda'];
