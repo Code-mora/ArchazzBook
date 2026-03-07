@@ -28,12 +28,13 @@
             max-width: 800px;
             margin: 0 auto;
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
+            position: relative;
         }
         
         .book-info-header {
-            flex: 1;
+            text-align: center;
         }
         
         .book-info-header h1 {
@@ -50,6 +51,10 @@
         .reader-controls {
             display: flex;
             gap: 1rem;
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
         }
         
         .reader-content {
@@ -230,12 +235,15 @@
             .reader-header-content {
                 flex-direction: column;
                 gap: 1rem;
-                align-items: flex-start;
+                align-items: center;
+                text-align: center;
             }
             
             .reader-controls {
                 width: 100%;
-                justify-content: flex-end;
+                justify-content: center;
+                position: static;
+                transform: none;
             }
             
             .pagination-btn {
@@ -588,7 +596,7 @@
             <div class="reader-header-content">
                 <div class="book-info-header">
                     <h1 id="reader-book-title">Loading...</h1>
-                    <p>by <span id="reader-book-author">Archazz</span></p>
+                    <p>by <span id="reader-book-author">Malatie</span></p>
                 </div>
                 <div class="reader-controls">
                     <button class="btn btn-outline" onclick="window.history.back()">
@@ -911,10 +919,10 @@
             const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
             const isAuthor = currentUser && currentUser.role === 'author';
             
-            // Random name for anon, or 'Archazz' for author
+            // Random name for anon, or 'Malatie' for author
             let authorName = 'Anonymous';
             if (isAuthor) {
-                authorName = 'Archazz'; // Or currentUser.name
+                authorName = 'Malatie'; // Or currentUser.name
             } else {
                 const adjectives = ['Happy', 'Curious', 'Quiet', 'Loud', 'Mystery', 'Brave'];
                 const animals = ['Reader', 'Bookworm', 'Cat', 'Owl', 'Fox', 'Panda'];
@@ -930,16 +938,29 @@
                 btn.disabled = true;
                 btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Posting...';
                 
+                const browserId = localStorage.getItem('archazz_browser_id');
                 const commentData = {
                     book_id: currentBook.id,
                     content: content,
                     author_name: authorName,
                     is_author: isAuthor,
                     parent_id: replyToId,
-                    browser_id: localStorage.getItem('archazz_browser_id') // Add browser_id for notification tracking
+                    browser_id: browserId
                 };
                 
-                const result = await window.SupabaseAPI.createComment(commentData);
+                let result;
+                try {
+                    result = await window.SupabaseAPI.createComment(commentData);
+                } catch (dbErr) {
+                    // Fallback: If browser_id is not in fcm_tokens, retry without it
+                    if (dbErr.message && dbErr.message.includes('foreign key constraint')) {
+                        console.warn('Browser ID not found in fcm_tokens, retrying without browser_id...');
+                        commentData.browser_id = null;
+                        result = await window.SupabaseAPI.createComment(commentData);
+                    } else {
+                        throw dbErr;
+                    }
+                }
                 
                 // Save to my_comments in localStorage so I can edit/delete it later
                 const myComments = JSON.parse(localStorage.getItem('my_comments') || '[]');
@@ -1039,7 +1060,7 @@
 
             // Display book info
             // Handle both legacy (localStorage) and Supabase field names
-            const authorName = book.author || book.author_name || 'Archazz';
+            const authorName = book.author || book.author_name || 'Malatie';
             document.getElementById('reader-book-title').textContent = book.title;
             document.getElementById('reader-book-author').textContent = authorName;
             document.title = `${book.title} - ArchazzBook`;
