@@ -1025,30 +1025,34 @@
                 return;
             }
 
-            // Get books from localStorage
-            const savedBooks = localStorage.getItem('books');
             let books = [];
             
-            if (savedBooks) {
-                books = JSON.parse(savedBooks);
-            } else if (window.ArchazzBook && window.ArchazzBook.books) {
-                books = window.ArchazzBook.books;
+            // Try Supabase first to get fresh data (critical for draft -> published sync)
+            if (window.SupabaseAPI) {
+                try {
+                    books = await window.SupabaseAPI.fetchBooks();
+                    
+                    // Optional: update local cache with fresh data
+                    localStorage.setItem('books', JSON.stringify(books));
+                } catch (e) {
+                    console.error('Failed to fetch from Supabase in reader, falling back to local', e);
+                    // Fallback to localStorage
+                    const savedBooks = localStorage.getItem('books');
+                    if (savedBooks) {
+                        books = JSON.parse(savedBooks);
+                    }
+                }
+            } else {
+                // Fallback if no Supabase
+                const savedBooks = localStorage.getItem('books');
+                if (savedBooks) {
+                    books = JSON.parse(savedBooks);
+                } else if (window.ArchazzBook && window.ArchazzBook.books) {
+                    books = window.ArchazzBook.books;
+                }
             }
 
             let book = books.find(b => b.id === bookId);
-
-            // If not found in localStorage, and we have Supabase, try fetching
-            if (!book && window.SupabaseAPI) {
-                try {
-                    const onlineBooks = await window.SupabaseAPI.fetchBooks();
-                    book = onlineBooks.find(b => b.id === bookId);
-                    
-                    // If consistent with app.js implementation, we might want to update local cache
-                    // but for now just using it is enough for the reader
-                } catch (e) {
-                    console.error('Failed to fetch from Supabase in reader', e);
-                }
-            }
 
             if (!book) {
                 alert('Book not found');
