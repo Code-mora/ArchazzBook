@@ -269,7 +269,7 @@ function initNotificationUI() {
                         setTimeout(() => banner.style.display = 'none', 300);
                     }
                     localStorage.setItem('archazz_notif_status', 'denied');
-                    alert('❌ Notification permission was denied. You can enable it later in browser settings.');
+                    alert('❌ Izin notifikasi ditolak oleh browser.\n\nCara memperbaiki:\n1. Klik ikon "Gembok" (Lock) atau "Tune/Settings" di sebelah kiri alamat web ini (URL bar)\n2. Cari menu "Notifications" / "Notifikasi"\n3. Ubah pengaturannya jadi "Allow" / "Izinkan"\n4. Refresh halamannya!');
                 }
             } catch (err) {
                 console.error('Setup failed:', err);
