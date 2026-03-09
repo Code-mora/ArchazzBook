@@ -149,7 +149,7 @@ export async function setupNotifications(vapidKey) {
     }
   } catch (err) {
     console.error('❌ Critical Setup Error:', err);
-    return false;
+    throw err;
   }
 }
 
