@@ -82,6 +82,12 @@ async function hardReset() {
 export async function setupNotifications(vapidKey) {
   try {
     console.log('🔔 Requesting notification permission...');
+    
+    // Check if browser supports notifications (iOS/mobile check)
+    if (!('Notification' in window)) {
+        throw new Error('NOT_SUPPORTED');
+    }
+    
     const permission = await Notification.requestPermission();
     
     if (permission === 'granted') {
@@ -298,9 +304,15 @@ function initNotificationUI() {
                 // Restore button state on error so user can retry
                 btnAllow.disabled = false;
                 btnAllow.innerHTML = originalText;
-                
                 if (err.message && err.message.includes('PushManager')) {
                     alert('⚠️ Gagal mendapatkan akses notifikasi.\n\nJika kamu menggunakan BRAVE BROWSER:\n1. Buka menu Brave ☰ -> Settings\n2. Cari "Privacy and security"\n3. Nyalakan opsi "Use Google services for push messaging"\n4. Refresh halaman ini dan coba lagi.');
+                } else if (err.message && (err.message.includes('NOT_SUPPORTED') || err.message.includes('is not defined'))) {
+                    alert('⚠️ Yahh, sayangnya browser di HP kamu ini belum mendukung fitur Push Notification (biasanya karena limitasi di iPhone/iOS atau browser versi lama).\n\nTapi tenang, kamu tetap bisa baca ceritanya dengan normal kok! 😊');
+                    // Hide the banner permanently for this device so it doesn't annoy them
+                    if (banner) {
+                        banner.style.display = 'none';
+                    }
+                    localStorage.setItem('archazz_notif_status', 'unsupported');
                 } else {
                     alert('⚠️ Setup failed: ' + err.message + '. Please try again.');
                 }
