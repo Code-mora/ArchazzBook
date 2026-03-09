@@ -307,7 +307,7 @@ function initNotificationUI() {
                 if (err.message && err.message.includes('PushManager')) {
                     alert('⚠️ Gagal mendapatkan akses notifikasi.\n\nJika kamu menggunakan BRAVE BROWSER:\n1. Buka menu Brave ☰ -> Settings\n2. Cari "Privacy and security"\n3. Nyalakan opsi "Use Google services for push messaging"\n4. Refresh halaman ini dan coba lagi.');
                 } else if (err.message && (err.message.includes('NOT_SUPPORTED') || err.message.includes('is not defined'))) {
-                    alert('⚠️ Yahh, sayangnya browser di HP kamu ini belum mendukung fitur Push Notification (biasanya karena limitasi di iPhone/iOS atau browser versi lama).\n\nTapi tenang, kamu tetap bisa baca ceritanya dengan normal kok! 😊');
+                    alert('⚠️ Fitur Notifikasi tidak didukung saat dibuka dari dalam aplikasi (seperti Instagram, Line, TikTok, dll) atau jika device belum support.\n\n💡 Supaya bisa dapat notifikasi, buka link ini di browser utama HP kamu! Klik tombol (titik tiga ⋮) di pojok atas, lalu pilih "Open in Chrome" atau "Open in System Browser".\n\nTapi tenang, kalaupun nggak mau, kamu tetap bisa baca ceritanya dengan normal kok! 😊');
                     // Hide the banner permanently for this device so it doesn't annoy them
                     if (banner) {
                         banner.style.display = 'none';
