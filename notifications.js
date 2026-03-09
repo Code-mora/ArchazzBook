@@ -97,7 +97,26 @@ export async function setupNotifications(vapidKey) {
            throw e;
         }
 
-        const registration = await navigator.serviceWorker.ready;
+        // Wait for SW to actually activate before getting token
+        const waitForActive = async (reg) => {
+            if (reg.active) return reg;
+            return new Promise((resolve) => {
+                const worker = reg.installing || reg.waiting;
+                if (!worker) {
+                    // Fallback
+                    setTimeout(() => resolve(reg), 2000);
+                    return;
+                }
+                worker.addEventListener('statechange', (e) => {
+                    if (e.target.state === 'activated') {
+                        resolve(reg);
+                    }
+                });
+            });
+        };
+
+        const registration = await waitForActive(swReg);
+        await navigator.serviceWorker.ready;
 
         // Get FCM Token
         const currentToken = await getToken(messaging, { 
@@ -124,8 +143,11 @@ export async function setupNotifications(vapidKey) {
         
         // ATTEMPT 2: Fresh Start after Reset
         try {
+          await new Promise(resolve => setTimeout(resolve, 1000));
           const freshReg = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
           await navigator.serviceWorker.ready;
+          // Adding a short breather for SW to catch up
+          await new Promise(resolve => setTimeout(resolve, 1500));
           
           const freshToken = await getToken(messaging, { 
             vapidKey: vapidKey,
@@ -276,7 +298,12 @@ function initNotificationUI() {
                 // Restore button state on error so user can retry
                 btnAllow.disabled = false;
                 btnAllow.innerHTML = originalText;
-                alert('⚠️ Setup failed: ' + err.message + '. Please try again.');
+                
+                if (err.message && err.message.includes('PushManager')) {
+                    alert('⚠️ Gagal mendapatkan akses notifikasi.\n\nJika kamu menggunakan BRAVE BROWSER:\n1. Buka menu Brave ☰ -> Settings\n2. Cari "Privacy and security"\n3. Nyalakan opsi "Use Google services for push messaging"\n4. Refresh halaman ini dan coba lagi.');
+                } else {
+                    alert('⚠️ Setup failed: ' + err.message + '. Please try again.');
+                }
             }
         });
     } else {
