@@ -34,9 +34,11 @@ export default async function handler(req, res) {
       body: body || '',
     },
     webpush: {
+      fcmOptions: {
+        link: url || '/' // Rekomendasi resmi Web Push untuk action klik
+      },
       notification: {
-        icon: icon || '/assets/icon.png',
-        click_action: url || '/' // URL yang dibuka saat diklik
+        icon: icon || '/assets/images/logo-archazz.png'
       }
     }
   };
