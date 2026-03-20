@@ -145,7 +145,6 @@
                         })
                     });
 
-
                     // Check response status before parsing JSON
                     if (!response.ok) {
                         console.error('HTTP Error:', response.status, response.statusText);
@@ -153,12 +152,24 @@
                         continue;
                     }
 
-                    const result = await response.json();
-                    if (result.success) {
-                        successCount++;
-                    } else {
-                        console.error('API Error:', result);
+                    // Tambahan debug untuk membantu trace jika backend bukan Vercel
+                    const textResponse = await response.text();
+                    try {
+                        const result = JSON.parse(textResponse);
+                        if (result.success) {
+                            successCount++;
+                        } else {
+                            console.error('API Error:', result);
+                            failCount++;
+                        }
+                    } catch (parseError) {
+                        console.error('Parse JSON Error (Mungkin backend mengembalikan HTML/JS mentah):', textResponse.substring(0, 100));
                         failCount++;
+                        // Jika melempar syntax error pada text JS function (Vercel)
+                        if (textResponse.includes('export default')) {
+                            alert('🚨 ERROR BACKEND: Endpoint /api/send-push.js tidak dijalankan sebagai API oleh server. Ini terjadi jika kamu host di AlwaysData/Github Pages tanpa Vercel.');
+                            throw new Error('Backend returns raw JS. Must deploy /api folder to Vercel.');
+                        }
                     }
                 } catch (e) {
                     console.error('Fetch Error:', e);
