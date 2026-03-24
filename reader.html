@@ -1206,7 +1206,9 @@
             document.getElementById('page-info').textContent = `Page ${currentPageInChapter} of ${totalPagesInChapter}`;
             
             // Show/hide pagination controls
-            if (totalPagesInChapter > 1) {
+            const hasMultipleChapters = currentBook.chapters && currentBook.chapters.length > 1;
+            
+            if (totalPagesInChapter > 1 || hasMultipleChapters) {
                 document.getElementById('pagination-controls').style.display = 'flex';
                 document.getElementById('current-page').textContent = currentPageInChapter;
                 document.getElementById('total-pages').textContent = totalPagesInChapter;
@@ -1215,8 +1217,26 @@
                 const prevBtn = document.getElementById('prev-page-btn');
                 const nextBtn = document.getElementById('next-page-btn');
                 
-                prevBtn.disabled = currentPageInChapter === 1;
-                nextBtn.disabled = currentPageInChapter === totalPagesInChapter;
+                const currentChapterIndex = currentBook.chapters.findIndex(c => c.id === currentChapterId);
+                
+                const isFirstPageOfFirstChapter = (currentChapterIndex === 0 && currentPageInChapter === 1);
+                const isLastPageOfLastChapter = (currentChapterIndex === currentBook.chapters.length - 1 && currentPageInChapter === totalPagesInChapter);
+                
+                prevBtn.disabled = isFirstPageOfFirstChapter;
+                nextBtn.disabled = isLastPageOfLastChapter;
+                
+                // Ganti text button jika pindah chapter
+                if (currentPageInChapter === totalPagesInChapter && !isLastPageOfLastChapter) {
+                    nextBtn.innerHTML = 'Next Chapter <i class="fas fa-chevron-right"></i>';
+                } else {
+                    nextBtn.innerHTML = 'Next <i class="fas fa-chevron-right"></i>';
+                }
+                
+                if (currentPageInChapter === 1 && !isFirstPageOfFirstChapter) {
+                    prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i> Prev Chapter';
+                } else {
+                    prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i> Previous';
+                }
             } else {
                 document.getElementById('pagination-controls').style.display = 'none';
             }
