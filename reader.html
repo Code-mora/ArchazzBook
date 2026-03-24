@@ -568,6 +568,43 @@
             color: var(--gray);
             padding: 2rem;
         }
+        /* ====== Quill Editor Output Compatibility ======
+         * Quill memakai class-class khusus untuk format teks.
+         * Kita butuh style ini supaya konten chapter tampil sesuai
+         * seperti saat ditulis di editor (align, dsb).
+         */
+        .reader-paper .ql-align-center,
+        #story-content .ql-align-center {
+            text-align: center !important;
+        }
+        .reader-paper .ql-align-right,
+        #story-content .ql-align-right {
+            text-align: right !important;
+        }
+        .reader-paper .ql-align-justify,
+        #story-content .ql-align-justify {
+            text-align: justify !important;
+        }
+        /* Fix untuk elemen yang tidak punya class tapi di-set via inline style */
+        #story-content p[style*="text-align: center"],
+        #story-content div[style*="text-align: center"] {
+            text-align: center !important;
+        }
+        /* Style untuk horizontal rule / divider separator (======) */
+        #story-content p:has(> br:only-child),
+        #story-content p:empty {
+            display: none; /* Sembunyikan paragraf kosong */
+        }
+        #story-content .ql-align-center:not(:empty) {
+            letter-spacing: 0.5em;
+            color: var(--gray);
+            margin: 2rem 0;
+        }
+        /* Sembunyikan outline border dari Quill block yang ter-render di reader */
+        #story-content [class*="ql-"] {
+            outline: none !important;
+            border: none !important;
+        }
     
     </style>
 </head>
