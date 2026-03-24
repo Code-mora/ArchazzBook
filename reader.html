@@ -1111,9 +1111,8 @@
             // Start with first chapter
             currentChapterId = currentBook.chapters[0].id;
             
-            // Add chapter selector if multiple chapters
-            if (currentBook.chapters.length > 1) {
-                // We need to pass the filtered chapters or ensure logic uses currentBook.chapters
+            // Add chapter selector if there are any chapters
+            if (currentBook.chapters.length > 0) {
                 addChapterSelector(); 
             }
             
@@ -1206,8 +1205,11 @@
             document.getElementById('page-info').textContent = `Page ${currentPageInChapter} of ${totalPagesInChapter}`;
             
             // Show/hide pagination controls
-            const hasMultipleChapters = currentBook.chapters && currentBook.chapters.length > 1;
+            const hasMultipleChapters = currentBook.chapters && currentBook.chapters.length > 0;
             
+            // Selalu tampilkan pagination control jika ini buku format Webtoon (Chapters),
+            // supaya walaupun baru ada 1 chapter 1 halaman, tombol "Next Chapter" tetap terlihat
+            // (namun dalam posisi ter-disable / redup).
             if (totalPagesInChapter > 1 || hasMultipleChapters) {
                 document.getElementById('pagination-controls').style.display = 'flex';
                 document.getElementById('current-page').textContent = currentPageInChapter;
