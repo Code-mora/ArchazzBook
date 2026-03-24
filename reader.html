@@ -1033,11 +1033,17 @@
             if (isAuthor) {
                 authorName = 'Archazz'; // Or currentUser.name
             } else {
-                const adjectives = ['Happy', 'Curious', 'Quiet', 'Loud', 'Mystery', 'Brave'];
-                const animals = ['Reader', 'Bookworm', 'Cat', 'Owl', 'Fox', 'Panda'];
-                const randAdj = adjectives[Math.floor(Math.random() * adjectives.length)];
-                const randAni = animals[Math.floor(Math.random() * animals.length)];
-                authorName = `${randAdj} ${randAni}`;
+                let savedAnonName = localStorage.getItem('archazz_anon_name');
+                if (!savedAnonName) {
+                    const adjectives = ['Happy', 'Curious', 'Quiet', 'Loud', 'Mystery', 'Brave', 'Charming', 'Sleepy'];
+                    const animals = ['Reader', 'Bookworm', 'Cat', 'Owl', 'Fox', 'Panda', 'Tiger', 'Wolf'];
+                    const randAdj = adjectives[Math.floor(Math.random() * adjectives.length)];
+                    const randAni = animals[Math.floor(Math.random() * animals.length)];
+                    const randNum = Math.floor(Math.random() * 900) + 100; // 100-999
+                    savedAnonName = `${randAdj} ${randAni} ${randNum}`;
+                    localStorage.setItem('archazz_anon_name', savedAnonName);
+                }
+                authorName = savedAnonName;
             }
 
             try {
