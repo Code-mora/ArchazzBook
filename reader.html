@@ -713,7 +713,8 @@
             const commentsCount = document.getElementById('comments-count');
             
             try {
-                const comments = await window.SupabaseAPI.fetchComments(currentBook.id);
+                // Pass currentChapterId so it fetches per-chapter comments (Webtoon style)
+                const comments = await window.SupabaseAPI.fetchComments(currentBook.id, currentChapterId);
                 
                 commentsCount.textContent = comments.length;
                 
@@ -941,6 +942,7 @@
                 const browserId = localStorage.getItem('archazz_browser_id');
                 const commentData = {
                     book_id: currentBook.id,
+                    chapter_id: currentChapterId, // Store specific chapter to make it per-chapter
                     content: content,
                     author_name: authorName,
                     is_author: isAuthor,
@@ -1167,6 +1169,9 @@
             if (selector) {
                 selector.value = chapterId;
             }
+            
+            // Load chapter specific comments!
+            loadComments();
         }
 
         function displayPage(pageNumber, chapter) {

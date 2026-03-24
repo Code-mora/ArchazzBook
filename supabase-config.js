@@ -206,15 +206,26 @@ async function incrementBookViews(bookId) {
 /**
  * Fetch comments for a book from Supabase
  * @param {number} bookId - Book ID
+ * @param {number} chapterId - Target Chapter ID (Optional)
  * @returns {Promise<Array>} Array of comments
  */
-async function fetchComments(bookId) {
+async function fetchComments(bookId, chapterId = null) {
   try {
-    const { data, error } = await window.supabaseClient
+    let query = window.supabaseClient
       .from('comments')
       .select('*')
-      .eq('book_id', bookId)
-      .order('created_at', { ascending: true });
+      .eq('book_id', bookId);
+      
+    // Filter chapter-spesifik jika dimintakan
+    if (chapterId !== null) {
+        query = query.eq('chapter_id', chapterId);
+    } else {
+        // Untuk backward compatibility buku-buku lama atau cover utama:
+        // query = query.filter('chapter_id', 'is', 'null'); ATAU dibiarkan load semua.
+        // Kita biarkan select semua jika chapterId tidak disebut.
+    }
+      
+    const { data, error } = await query.order('created_at', { ascending: true });
 
     if (error) throw error;
     return data;
