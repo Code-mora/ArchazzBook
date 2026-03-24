@@ -297,6 +297,88 @@ async function updateComment(commentId, newContent) {
   }
 }
 
+
+/**
+ * Tambahkan emoji reaction ke suatu chapter/buku
+ */
+async function addReaction(bookId, chapterId, browserId, emoji) {
+  try {
+    const { data, error } = await window.supabaseClient
+      .from('reactions')
+      .upsert([{ book_id: bookId, chapter_id: chapterId, browser_id: browserId, emoji }], {
+        onConflict: 'book_id,chapter_id,browser_id'
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('❌ Error adding reaction:', error);
+    throw error;
+  }
+}
+
+/**
+ * Hapus reaction (toggle off)
+ */
+async function deleteReaction(bookId, chapterId, browserId) {
+  try {
+    const { error } = await window.supabaseClient
+      .from('reactions')
+      .delete()
+      .eq('book_id', bookId)
+      .eq('browser_id', browserId)
+      .is('chapter_id', chapterId);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('❌ Error deleting reaction:', error);
+    return false;
+  }
+}
+
+/**
+ * Ambil semua reaction untuk suatu chapter/buku
+ */
+async function fetchReactions(bookId, chapterId = null) {
+  try {
+    let query = window.supabaseClient
+      .from('reactions')
+      .select('emoji, browser_id')
+      .eq('book_id', bookId);
+
+    if (chapterId !== null) {
+      query = query.eq('chapter_id', chapterId);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('❌ Error fetching reactions:', error);
+    return [];
+  }
+}
+
+/**
+ * Ambil total "Happy Readers" global = jumlah unique browser_id yang pernah react
+ */
+async function countHappyReaders() {
+  try {
+    const { count, error } = await window.supabaseClient
+      .from('reactions')
+      .select('browser_id', { count: 'exact', head: true });
+
+    if (error) throw error;
+    return count || 0;
+  } catch (error) {
+    console.error('❌ Error counting happy readers:', error);
+    return 0;
+  }
+}
+
 // Export functions for use in other files
 window.SupabaseAPI = {
   fetchBooks: fetchBooksFromSupabase,
@@ -310,4 +392,8 @@ window.SupabaseAPI = {
   createComment: createComment,
   deleteComment: deleteComment,
   updateComment: updateComment,
+  addReaction: addReaction,
+  deleteReaction: deleteReaction,
+  fetchReactions: fetchReactions,
+  countHappyReaders: countHappyReaders,
 };

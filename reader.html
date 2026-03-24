@@ -564,6 +564,67 @@
             resize: vertical;
         }
         
+        /* Emoji Reaction Bar */
+        .reaction-bar {
+            max-width: 800px;
+            margin: 1.5rem auto 0;
+            background: white;
+            border-radius: var(--radius-lg);
+            padding: 1.25rem 1.5rem;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .reaction-bar-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--gray);
+            white-space: nowrap;
+        }
+        .reaction-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .reaction-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.4rem 0.9rem;
+            border-radius: 2rem;
+            border: 2px solid var(--gray-lighter);
+            background: white;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        .reaction-btn .reaction-count {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--gray);
+        }
+        .reaction-btn:hover {
+            border-color: var(--primary);
+            background: #EEF2FF;
+            transform: scale(1.05);
+        }
+        .reaction-btn.active {
+            border-color: var(--primary);
+            background: #EEF2FF;
+        }
+        .reaction-btn.active .reaction-count {
+            color: var(--primary);
+        }
+        @media (max-width: 480px) {
+            .reaction-bar {
+                padding: 1rem;
+                gap: 0.75rem;
+            }
+        }
+        
         .loading-spinner {
             text-align: center;
             color: var(--gray);
@@ -681,6 +742,15 @@
                 <button class="pagination-btn" id="next-page-btn" onclick="nextPage()">
                     Next <i class="fas fa-chevron-right"></i>
                 </button>
+            </div>
+
+            <!-- Emoji Reaction Bar -->
+            <div class="reaction-bar" id="reaction-bar">
+                <span class="reaction-bar-label">Gimana ceritanya?</span>
+                <div class="reaction-buttons" id="reaction-buttons">
+                    <!-- Reaction buttons will be loaded here -->
+                    <div style="font-size:0.85rem; color:var(--gray);"><i class="fas fa-spinner fa-spin"></i></div>
+                </div>
             </div>
 
             <!-- Comments Section -->
@@ -1054,6 +1124,78 @@
             return text.replace(/[&<>"']/g, function(m) { return map[m]; });
         }
 
+        // --- Emoji Reactions Logic ---
+        const emojis = ['😊', '😍', '🔥', '😢', '😂'];
+
+        async function loadReactions() {
+            if (!currentBook || !window.SupabaseAPI || !window.SupabaseAPI.fetchReactions) return;
+            
+            const btnContainer = document.getElementById('reaction-buttons');
+            try {
+                const reactions = await window.SupabaseAPI.fetchReactions(currentBook.id, currentChapterId || null);
+                let browserId = localStorage.getItem('archazz_browser_id');
+                // Polyfill if someone didn't click anywhere before reaching here
+                if (!browserId) {
+                    browserId = 'anon-' + Date.now() + Math.random().toString(36).substring(2);
+                    localStorage.setItem('archazz_browser_id', browserId);
+                }
+                
+                // Count occurrences for each emoji
+                const counts = {};
+                emojis.forEach(e => counts[e] = 0);
+                
+                let myReaction = null;
+                
+                reactions.forEach(r => {
+                    if (counts[r.emoji] !== undefined) counts[r.emoji]++;
+                    if (r.browser_id === browserId) myReaction = r.emoji;
+                });
+                
+                let html = '';
+                emojis.forEach(emoji => {
+                    const count = counts[emoji];
+                    const isActive = myReaction === emoji ? 'active' : '';
+                    html += `
+                        <button class="reaction-btn ${isActive}" onclick="toggleReaction('${emoji}', '${myReaction || ''}')">
+                            ${emoji} <span class="reaction-count">${count > 0 ? count : ''}</span>
+                        </button>
+                    `;
+                });
+                
+                btnContainer.innerHTML = html;
+            } catch (error) {
+                console.error('Failed to load reactions', error);
+                btnContainer.innerHTML = '<span style="color:var(--gray); font-size:0.85rem">Error loading reactions</span>';
+            }
+        }
+
+        window.toggleReaction = async function(emoji, currentReaction) {
+            let browserId = localStorage.getItem('archazz_browser_id');
+            if (!browserId) return;
+
+            // Optimistic UI update
+            const btnContainer = document.getElementById('reaction-buttons');
+            btnContainer.style.opacity = '0.5';
+            btnContainer.style.pointerEvents = 'none';
+
+            try {
+                if (currentReaction === emoji) {
+                    // Turn it off
+                    await window.SupabaseAPI.deleteReaction(currentBook.id, currentChapterId || null, browserId);
+                } else {
+                    // Turn it on (upsert replaces if already voted)
+                    await window.SupabaseAPI.addReaction(currentBook.id, currentChapterId || null, browserId, emoji);
+                }
+            } catch (e) {
+                console.error("Gagal bereaksi:", e);
+                showNotification('Failed to save reaction');
+            }
+
+            btnContainer.style.opacity = '1';
+            btnContainer.style.pointerEvents = 'auto';
+            loadReactions();
+        }
+
         async function loadBook() {
             // Get book ID from URL
             const urlParams = new URLSearchParams(window.location.search);
@@ -1120,6 +1262,7 @@
             
             // Now that book is loaded, fetch comments
             loadComments();
+            loadReactions();
         }
 
         function loadChapterBasedBook() {
@@ -1209,6 +1352,7 @@
             
             // Load chapter specific comments!
             loadComments();
+            loadReactions();
         }
 
         function displayPage(pageNumber, chapter) {

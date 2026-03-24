@@ -195,22 +195,21 @@ async function loadBooks() {
   });
 }
 
-function updateHeroStats(books) {
+async function updateHeroStats(books) {
   // Update books count
   const booksCount = document.getElementById('books-count');
   if (booksCount) {
     booksCount.textContent = books.length;
   }
 
-  // Calculate happy readers from views
-  let viewsData = localStorage.getItem('booksViews');
+  // Ambil jumlah "Happy Readers" yang NYATA dari tabel reactions di Supabase
   let totalReaders = 0;
-
-  if (viewsData && books.length > 0) {
-    const views = JSON.parse(viewsData);
-    const totalViews = Object.values(views).reduce((sum, val) => sum + val, 0);
-    // Calculate readers as 35% of total views (realistic engagement rate)
-    totalReaders = Math.floor(totalViews * 0.35);
+  if (window.SupabaseAPI && window.SupabaseAPI.countHappyReaders) {
+    try {
+      totalReaders = await window.SupabaseAPI.countHappyReaders();
+    } catch (e) {
+      console.warn('Could not fetch happy readers count:', e);
+    }
   }
 
   // Update readers count with animation
