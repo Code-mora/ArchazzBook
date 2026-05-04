@@ -8,8 +8,6 @@ let books = [];
 
 // User authentication state
 let currentUser = null;
-const AUTHOR_EMAIL = 'wazz'; // Author username
-const AUTHOR_PASSWORD = 'wazzhere'; // Author password
 
 // =============================
 // LOCALSTORAGE UTILITIES
@@ -74,45 +72,74 @@ document.addEventListener('DOMContentLoaded', function () {
 // =============================
 
 function checkAuthState() {
-  const savedUser = localStorage.getItem('currentUser');
-  if (savedUser) {
-    currentUser = JSON.parse(savedUser);
-    updateUIForLoggedInUser();
+  if (window.SupabaseAPI) {
+    window.SupabaseAPI.getSession().then((session) => {
+      if (session && session.user) {
+        currentUser = {
+          name: 'Archazz (Author)',
+          email: session.user.email,
+          role: 'author',
+        };
+        updateUIForLoggedInUser();
+      } else {
+        // Fallback to localStorage check for backward compatibility just in case, but clear it
+        const savedUser = localStorage.getItem('currentUser');
+        if (savedUser) {
+           localStorage.removeItem('currentUser');
+        }
+      }
+    });
+  } else {
+      const savedUser = localStorage.getItem('currentUser');
+      if (savedUser) {
+        currentUser = JSON.parse(savedUser);
+        updateUIForLoggedInUser();
+      }
   }
 }
 
-function handleLogin(event) {
+async function handleLogin(event) {
   event.preventDefault();
 
   const username = document.getElementById('login-username').value;
   const password = document.getElementById('login-password').value;
 
-  // Check if author
-  if (username === AUTHOR_EMAIL && password === AUTHOR_PASSWORD) {
-    currentUser = {
-      name: 'Archazz',
-      email: username,
-      role: 'author',
-    };
+  try {
+    if (window.SupabaseAPI) {
+      // Use Supabase Auth
+      const data = await window.SupabaseAPI.signIn(username, password);
+      
+      currentUser = {
+        name: 'Archazz',
+        email: data.user.email,
+        role: 'author',
+      };
+      
+      updateUIForLoggedInUser();
+      closeModal('login-modal');
 
-    localStorage.setItem('currentUser', JSON.stringify(currentUser));
-    updateUIForLoggedInUser();
-    closeModal('login-modal');
+      // Show success message
+      showNotification('Welcome back, ' + currentUser.name + '!');
 
-    // Show success message
-    showNotification('Welcome back, ' + currentUser.name + '!');
-
-    // Redirect to dashboard
-    setTimeout(() => {
-      window.location.href = 'dashboard.html';
-    }, 1000);
-  } else {
-    // Invalid credentials
+      // Redirect to dashboard
+      setTimeout(() => {
+        window.location.href = 'dashboard.html';
+      }, 1000);
+      
+    } else {
+      alert('Supabase is not initialized. Cannot login.');
+    }
+  } catch (error) {
+    console.error('Login error:', error);
     alert('Invalid author credentials. Please try again.');
   }
 }
 
-function logout() {
+async function logout() {
+  if (window.SupabaseAPI) {
+    await window.SupabaseAPI.signOut();
+  }
+  
   currentUser = null;
   localStorage.removeItem('currentUser');
 
@@ -121,6 +148,11 @@ function logout() {
   document.getElementById('user-menu').style.display = 'none';
 
   showNotification('Logged out successfully');
+  
+  // If on dashboard, redirect to home
+  if (window.location.pathname.includes('dashboard.html')) {
+    window.location.href = 'index.html';
+  }
 }
 
 function updateUIForLoggedInUser() {
@@ -519,7 +551,6 @@ document.addEventListener('keydown', function (event) {
 window.ArchazzBook = {
   books: books,
   currentUser: currentUser,
-  AUTHOR_EMAIL: AUTHOR_EMAIL,
   checkAuthState: checkAuthState,
   logout: logout,
   showNotification: showNotification,

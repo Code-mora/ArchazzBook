@@ -379,6 +379,55 @@ async function countHappyReaders() {
   }
 }
 
+// =============================
+// SUPABASE AUTH FUNCTIONS
+// =============================
+
+/**
+ * Sign in with email and password
+ */
+async function signIn(email, password) {
+  try {
+    const { data, error } = await window.supabaseClient.auth.signInWithPassword({
+      email: email,
+      password: password,
+    });
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('❌ Error signing in:', error);
+    throw error;
+  }
+}
+
+/**
+ * Sign out the current user
+ */
+async function signOut() {
+  try {
+    const { error } = await window.supabaseClient.auth.signOut();
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('❌ Error signing out:', error);
+    return false;
+  }
+}
+
+/**
+ * Get current session/user
+ */
+async function getSession() {
+  try {
+    const { data, error } = await window.supabaseClient.auth.getSession();
+    if (error) throw error;
+    return data.session;
+  } catch (error) {
+    console.error('❌ Error getting session:', error);
+    return null;
+  }
+}
+
 // Export functions for use in other files
 window.SupabaseAPI = {
   fetchBooks: fetchBooksFromSupabase,
@@ -396,4 +445,7 @@ window.SupabaseAPI = {
   deleteReaction: deleteReaction,
   fetchReactions: fetchReactions,
   countHappyReaders: countHappyReaders,
+  signIn: signIn,
+  signOut: signOut,
+  getSession: getSession,
 };

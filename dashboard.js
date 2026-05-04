@@ -61,26 +61,23 @@ document.addEventListener('DOMContentLoaded', function () {
 // AUTHENTICATION CHECK
 // =============================
 
-function checkDashboardAuth() {
-  const savedUser = localStorage.getItem('currentUser');
+async function checkDashboardAuth() {
+  if (!window.SupabaseAPI) {
+    // Supabase not loaded yet, wait and retry
+    setTimeout(checkDashboardAuth, 500);
+    return;
+  }
 
-  if (!savedUser) {
+  const session = await window.SupabaseAPI.getSession();
+
+  if (!session || !session.user) {
     // Not logged in, redirect to home
     window.location.href = 'index.html';
     return;
   }
 
-  const user = JSON.parse(savedUser);
-
-  if (user.role !== 'author') {
-    // Not an author, redirect to home
-    alert('Access denied. Author privileges required.');
-    window.location.href = 'index.html';
-    return;
-  }
-
-  // Update username in navbar
-  document.getElementById('user-name').textContent = user.name;
+  // Valid Supabase session — update navbar
+  document.getElementById('user-name').textContent = 'Archazz';
 }
 
 // =============================
@@ -449,8 +446,11 @@ async function updateStats() {
     activeReaders.toLocaleString();
 }
 
-function logout() {
+async function logout() {
   if (confirm('Are you sure you want to logout?')) {
+    if (window.SupabaseAPI) {
+      await window.SupabaseAPI.signOut();
+    }
     localStorage.removeItem('currentUser');
     window.location.href = 'index.html';
   }
