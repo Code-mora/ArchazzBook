@@ -18,7 +18,11 @@ const messaging = getMessaging(app);
 // 2. Helper: Generate or Get Browser ID (UUID)
 export function getBrowserId() {
   let bid = localStorage.getItem('archazz_browser_id');
-  if (!bid) {
+  
+  // Strict UUID format validation
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  
+  if (!bid || !uuidRegex.test(bid)) {
     try {
       // Try modern crypto API first
       if (crypto && crypto.randomUUID) {
@@ -30,8 +34,8 @@ export function getBrowserId() {
       localStorage.setItem('archazz_browser_id', bid);
     } catch (e) {
       console.error('Error generating UUID:', e);
-      // Last resort: timestamp-based ID
-      bid = 'fallback-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+      // Last resort: ensure it stays within UUID format to prevent DB crash
+      bid = generateUUIDFallback();
       localStorage.setItem('archazz_browser_id', bid);
     }
   }
