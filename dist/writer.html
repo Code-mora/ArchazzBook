@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <base target="_self">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Writer - ArchazzBook</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Quill Rich Text Editor -->
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <link href="quill-fonts.css" rel="stylesheet">
+    <link href="quill-fixes.css" rel="stylesheet">
+    <style>
+        @media (max-width: 768px) {
+            /* Keep text visible based on user request */
+            .btn-text {
+                display: inline !important; 
+            }
+            
+            .writer-actions {
+                display: grid !important;
+                /* Row 1: Selector */
+                /* Row 2: New Chapter | Cover */
+                /* Row 3: Save Button */
+                grid-template-columns: 1fr 1fr; 
+                gap: 0.75rem;
+            }
+            
+            .chapter-selector {
+                grid-column: 1 / -1; /* Row 1 Full Width */
+                width: 100%;
+            }
+
+            /* .writer-actions .btn:nth-child(2) {
+                 Auto flow to grid cell 
+            } */
+
+            /* .writer-actions .btn-primary {
+                grid-column: 1 / -1; 
+            } Removed to allow side-by-side buttons */
+            
+            .writer-actions .btn {
+                width: 100%;
+                justify-content: center;
+                padding: 0.75rem !important;
+            }
+        }
+        .writer-container {
+            min-height: 100vh;
+            background: var(--gray-lighter);
+            padding-top: 80px;
+        }
+
+        .writer-header {
+            background: white;
+            padding: 1.5rem 2rem;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 3rem;
+            position: sticky;
+            top: 76px;
+            z-index: 50;
+        }
+
+        .writer-header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .book-title-input {
+            flex: 1;
+            max-width: 400px;
+        }
+
+        .book-title-input input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--gray-lighter);
+            border-radius: var(--radius-md);
+            font-size: 1.125rem;
+            font-weight: 600;
+            font-family: var(--font-display);
+        }
+
+        .writer-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .chapter-selector {
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--primary);
+            border-radius: var(--radius-md);
+            background: white;
+            color: var(--dark);
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .writer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1.5rem 2rem 4rem;
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 2rem;
+        }
+
+        .pages-container {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            padding-top: 2rem;
+        }
+
+        /* Page Wrapper - contains toolbar + card as siblings */
+        .page-wrapper {
+            max-width: 21cm;
+            margin: 0 auto;
+            position: relative;
+            padding-top: 2rem;
+        }
+        
+        /* Header Info - floating above */
+        .page-header-info {
+            position: absolute;
+            top: 0;
+            right: 0;
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            z-index: 50;
+        }
+
+        .page-number-badge {
+            background: var(--primary);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-md);
+            font-size: 0.75rem;
+            font-weight: 600;
+            font-family: var(--font-primary);
+        }
+
+        .page-word-count {
+            background: var(--gray-lighter);
+            color: var(--dark);
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-md);
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .page-delete-btn {
+            background: #EF4444;
+            color: white;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* TOOLBAR AREA - OUTSIDE CARD! */
+        .page-toolbar-area {
+            margin-top: 3.5rem;
+            margin-bottom: 1.5rem;
+            position: relative;
+            z-index: 100;
+        }
+        
+        /* Toolbar styling */
+        .ql-toolbar.ql-snow {
+            background: white;
+            border: 2px solid var(--gray-lighter);
+            border-radius: var(--radius-md);
+            padding: 0.75rem;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        /* CRITICAL: Dropdowns are FREE - no parent constraints */
+        .ql-toolbar .ql-picker-options {
+            z-index: 9999 !important;
+        }
+        
+        /* Content Card - the white A4 card */
+        .page-content-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-xl);
+            padding: 3rem 2.5rem;
+            min-height: 29.7cm;
+            transition: var(--transition-normal);
+        }
+        
+        .page-content-card:hover {
+            box-shadow: var(--shadow-2xl);
+        }
+        
+        /* Editor content styling */
+        .page-editor {
+            font-family: 'Times New Roman', Times, serif;
+        }
+        
+        .ql-container {
+            border: none !important;
+            min-height: 800px;
+            font-family: 'Times New Roman', Times, serif;
+        }
+
+        .ql-editor {
+            min-height: 800px;
+            padding: 0;
+            font-size: 1.125rem;
+            line-height: 1.8;
+        }
+        
+        .ql-toolbar::-webkit-scrollbar {
+            height: 6px;
+        }
+        
+        .ql-toolbar::-webkit-scrollbar-track {
+            background: var(--gray-lighter);
+            border-radius: 3px;
+        }
+        
+        .ql-toolbar::-webkit-scrollbar-thumb {
+            background: var(--gray);
+            border-radius: 3px;
+        }
+
+        .add-page-btn {
+            width: 100%;
+            padding: 2rem;
+            border: 2px dashed var(--primary);
+            background: white;
+            border-radius: var(--radius-lg);
+            color: var(--primary);
+            font-size: 1.125rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: var(--transition-fast);
+        }
+
+        .add-page-btn:hover {
+            background: var(--gray-lighter);
+            transform: translateY(-2px);
+        }
+
+        /* Sidebar */
+        .writer-sidebar {
+            position: sticky;
+            top: 180px;
+            height: fit-content;
+        }
+
+        .sidebar-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .sidebar-card h3 {
+            font-size: 1.125rem;
+            margin-bottom: 1rem;
+            color: var(--dark);
+        }
+
+        .stats-grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            background: var(--gray-lighter);
+            border-radius: var(--radius-md);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--gray);
+        }
+
+        .stat-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .chapter-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .chapter-item {
+            padding: 0.75rem;
+            border: 2px solid var(--gray-lighter);
+            border-radius: var(--radius-md);
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: var(--transition-fast);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chapter-item:hover {
+            border-color: var(--primary);
+            background: var(--gray-lighter);
+        }
+
+        .chapter-item.active {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+        }
+
+        .chapter-info span {
+            display: block;
+            font-size: 0.75rem;
+            color: var(--gray);
+            margin-top: 0.25rem;
+        }
+
+        .chapter-actions {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .chapter-action-btn {
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: var(--gray-lighter);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+        }
+
+        .chapter-action-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .chapter-action-btn.delete:hover {
+            background: #EF4444;
+        }
+
+
+        @media (max-width: 1024px) {
+            .writer-content {
+                grid-template-columns: 1fr;
+            }
+
+            .writer-sidebar {
+                position: static;
+                order: 2;
+                width: 100%;
+            }
+            
+            .sidebar-card {
+                width: 100%;
+                max-width: 100%;
+            }
+            
+            .pages-container {
+                order: 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .writer-container {
+                padding-top: 70px;
+            }
+            
+            .writer-header {
+                padding: 1rem;
+                position: static;
+                margin-bottom: 1.5rem;
+                margin-left: 0;
+                margin-right: 0;
+            }
+            
+            .writer-header-content {
+                flex-direction: column;
+                gap: 1rem;
+                max-width: 100%;
+                padding: 0;
+            }
+
+            .book-title-input {
+                max-width: 100%;
+                width: 100%;
+            }
+            
+            .book-title-input input {
+                font-size: 1rem;
+                padding: 0.75rem 0.875rem;
+            }
+
+            .book-title-input select {
+                font-size: 0.9375rem !important;
+                padding: 0.625rem 0.75rem !important;
+                max-width: 100%;
+            }
+            
+            .writer-actions {
+                width: 100%;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+            
+            .chapter-selector {
+                flex: 1;
+                min-width: 120px;
+                padding: 0.625rem 0.875rem;
+                font-size: 0.9375rem;
+            }
+            
+            .writer-actions .btn {
+                padding: 0.625rem 0.875rem;
+                font-size: 0.9375rem;
+                flex: 1;
+                min-width: 80px;
+            }
+
+            #mobile-cover-btn {
+                order: 3;
+            }
+
+            .writer-actions .btn-primary {
+                order: 4;
+            }
+            
+            .writer-content {
+                padding: 0 0.75rem 3rem;
+            }
+
+            .page-wrapper {
+                padding: 2rem 1.25rem;
+            }
+            
+            .page-content-card {
+                padding: 2rem 1.25rem;
+            }
+            
+            .page-editor .ql-container {
+                min-height: 500px;
+            }
+            
+            .page-editor .ql-editor {
+                min-height: 500px;
+                font-size: 1rem;
+            }
+            
+            /* MOBILE ONLY: Static toolbar with super high z-index for dropdowns */
+            .page-editor .ql-toolbar {
+                position: static !important;
+                margin-top: 4rem;
+                margin-bottom: 1.5rem;
+                overflow-x: auto;
+                overflow-y: visible !important;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            /* MOBILE: Ensure dropdowns are ALWAYS visible */
+            .page-editor .ql-toolbar .ql-picker-options {
+                z-index: 9999 !important;
+                max-height: none !important;
+                position: absolute !important;
+            }
+            
+            .page-editor .ql-snow .ql-picker.ql-expanded .ql-picker-options {
+                z-index: 9999 !important;
+            }
+            
+            .page-editor .ql-snow .ql-picker.ql-font .ql-picker-options {
+                max-height: 350px !important;
+                overflow-y: auto;
+            }
+            
+            .page-header {
+                flex-wrap: wrap;
+                gap: 0.375rem;
+            }
+            
+            .page-number-badge,
+            .page-word-count {
+                font-size: 0.6875rem;
+                padding: 0.375rem 0.75rem;
+            }
+            
+            .page-delete-btn {
+                width: 28px;
+                height: 28px;
+            }
+            
+            .add-page-btn {
+                padding: 1.5rem;
+                font-size: 1rem;
+                width: 100%;
+            }
+            
+            .sidebar-card {
+                padding: 1.25rem;
+                width: 100%;
+                max-width: 100%;
+                margin-left: 0;
+                margin-right: 0;
+            }
+            
+            .sidebar-card h3 {
+                font-size: 1rem;
+            }
+            
+            .stat-value {
+                font-size: 1.125rem;
+            }
+            
+            .chapter-list {
+                max-height: 250px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .writer-header {
+                padding: 0.875rem 1rem;
+            }
+            
+            .writer-content {
+                padding: 0 0.5rem 2rem;
+            }
+            
+            .page-wrapper {
+                padding: 1.5rem 1rem;
+            }
+            
+            .page-content-card {
+                padding: 1.5rem 1rem;
+                border-radius: var(--radius-md);
+            }
+            
+            .book-title-input input {
+                font-size: 0.9375rem;
+                padding: 0.625rem 0.75rem;
+                width: 100%;
+            }
+            
+            .writer-actions {
+                gap: 0.75rem;
+                width: 100%;
+            }
+            
+            .chapter-selector {
+                font-size: 0.875rem;
+                padding: 0.5rem 0.75rem;
+            }
+            
+            .writer-actions .btn {
+                padding: 0.5rem 0.875rem;
+                font-size: 0.875rem;
+                white-space: nowrap;
+            }
+            
+            .writer-actions .btn i {
+                font-size: 0.8125rem;
+            }
+            
+            .page-editor {
+                font-size: 1rem;
+            }
+            
+            .page-editor .ql-container {
+                min-height: 400px;
+            }
+            
+            .page-editor .ql-editor {
+                min-height: 400px;
+                font-size: 0.9375rem;
+                line-height: 1.7;
+            }
+            
+            /* SMALLEST MOBILE: Static toolbar, extreme z-index */
+            .page-editor .ql-toolbar {
+                position: static !important;
+                top: auto !important;
+                margin-top: 4.5rem;
+                margin-bottom: 1.25rem;
+                border-radius: var(--radius-sm);
+                padding: 0.5rem;
+                overflow-x: auto;
+                overflow-y: visible !important;
+            }
+            
+            /* SMALLEST MOBILE: Dropdowns MUST be visible */
+            .page-editor .ql-toolbar .ql-picker-options {
+                z-index: 9999 !important;
+                max-height: none !important;
+                position: absolute !important;
+            }
+            
+            .page-editor .ql-snow .ql-picker.ql-font .ql-picker-options {
+                max-height: 300px !important;
+                overflow-y: auto;
+            }
+            
+            .page-editor .ql-toolbar .ql-formats {
+                margin-right: 8px;
+            }
+            
+            .page-editor .ql-toolbar button {
+                padding: 4px;
+            }
+            
+            .page-header {
+                top: 0.75rem;
+                right: 0.75rem;
+            }
+            
+            .page-number-badge,
+            .page-word-count {
+                font-size: 0.625rem;
+                padding: 0.3125rem 0.625rem;
+            }
+            
+            .page-delete-btn {
+                width: 26px;
+                height: 26px;
+                font-size: 0.75rem;
+            }
+            
+            .add-page-btn {
+                padding: 1.25rem;
+                font-size: 0.9375rem;
+                width: 100%;
+            }
+            
+            .pages-container {
+                gap: 1.5rem;
+                padding-top: 1rem;
+            }
+            
+            .sidebar-card {
+                padding: 1rem;
+                margin-bottom: 1rem;
+                width: 100%;
+                max-width: 100%;
+                margin-left: 0;
+                margin-right: 0;
+            }
+            
+            .sidebar-card h3 {
+                font-size: 0.9375rem;
+                margin-bottom: 0.75rem;
+            }
+            
+            .stat-item {
+                padding: 0.625rem;
+            }
+            
+            .stat-label {
+                font-size: 0.8125rem;
+            }
+            
+            .stat-value {
+                font-size: 1rem;
+            }
+            
+            .chapter-item {
+                padding: 0.625rem;
+            }
+            
+            .chapter-info {
+                font-size: 0.875rem;
+            }
+            
+            .chapter-info span {
+                font-size: 0.6875rem;
+            }
+            
+            .chapter-action-btn {
+                width: 24px;
+                height: 24px;
+                font-size: 0.6875rem;
+            }
+            
+            .chapter-list {
+                max-height: 200px;
+            }
+        }
+    
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo">
+                <i class="fas fa-book-open"></i>
+                <span>ArchazzBook</span>
+            </a>
+            <div class="nav-links">
+                <a href="dashboard.html" class="nav-link">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+                <div class="user-menu">
+                    <div class="user-avatar" style="overflow: hidden;">
+                        <img src="assets/images/logo-archazz.png" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                    <div class="dropdown">
+                        <button class="dropdown-toggle">
+                            <span id="user-name">Archazz</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="dropdown-menu">
+                            <a href="dashboard.html">
+                                <i class="fas fa-tachometer-alt"></i> Dashboard
+                            </a>
+                            <a href="#" onclick="logout()">
+                                <i class="fas fa-sign-out-alt"></i> Logout
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Writer -->
+    <div class="writer-container">
+        <!-- Header -->
+        <div class="writer-header">
+            <div class="writer-header-content">
+                <div class="book-title-input">
+                    <input type="text" id="book-title" placeholder="Enter your book title..." value="Untitled Story">
+                </div>
+
+                <div class="book-title-input" style="max-width: 200px;">
+                    <select id="book-genre" style="width: 100%; padding: 0.75rem 1rem; border: 2px solid var(--gray-lighter); border-radius: var(--radius-md); font-size: 1rem; font-weight: 500; background: white;">
+                        <option value="other">Select Genre</option>
+                        <option value="fiction">Fiction</option>
+                        <option value="fantasy">Fantasy</option>
+                        <option value="romance">Romance</option>
+                        <option value="mystery">Mystery</option>
+                        <option value="scifi">Sci-Fi</option>
+                        <option value="horror">Horror</option>
+                        <option value="adventure">Adventure</option>
+                        <option value="thriller">Thriller</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+
+                <div class="writer-actions">
+                    <select class="chapter-selector" id="chapter-selector">
+                        <option value="1">Chapter 1</option>
+                    </select>
+                    <button class="btn btn-outline" onclick="newChapter()">
+                        <i class="fas fa-plus"></i> <span class="btn-text">New Chapter</span>
+                    </button>
+                    <button class="btn btn-outline" id="mobile-cover-btn" onclick="uploadCover()" style="display: none; flex: 1;">
+                        <i class="fas fa-image"></i> <span class="btn-text">Cover</span>
+                    </button>
+                    <button class="btn btn-outline" onclick="saveBook('draft')" title="Save as Draft">
+                        <i class="fas fa-save"></i> <span class="btn-text">Save Draft</span>
+                    </button>
+                    <button class="btn btn-primary" onclick="saveBook('published')" title="Publish to Readers">
+                        <i class="fas fa-upload"></i> <span class="btn-text">Publish</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="writer-content">
+            <!-- Pages -->
+            <div class="pages-container" id="pages-container">
+                <!-- Pages will be dynamically added here -->
+            </div>
+
+            <!-- Sidebar -->
+            <div class="writer-sidebar">
+                <!-- Stats -->
+                <div class="sidebar-card">
+                    <h3><i class="fas fa-chart-line"></i> Statistics</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-label">Total Words</span>
+                            <span class="stat-value" id="total-words">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Total Pages</span>
+                            <span class="stat-value" id="total-pages-count">1</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Chapters</span>
+                            <span class="stat-value" id="total-chapters">1</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chapters -->
+                <div class="sidebar-card">
+                    <h3><i class="fas fa-book"></i> Chapters</h3>
+                    <div class="chapter-list" id="chapter-list">
+                        <!-- Chapters will be listed here -->
+                    </div>
+                    <button class="btn btn-outline btn-full" onclick="newChapter()" style="margin-top: 1rem;">
+                        <i class="fas fa-plus"></i> Add Chapter
+                    </button>
+                </div>
+
+                <!-- Book Cover Preview -->
+                <div class="sidebar-card" id="cover-display-card" style="display: none;">
+                    <h3><i class="fas fa-image"></i> Book Cover</h3>
+                    <div style="text-align: center;">
+                        <img id="sidebar-cover-preview" src="" alt="Book cover" style="max-width: 100%; border-radius: var(--radius-md); box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="sidebar-card">
+                    <h3><i class="fas fa-cog"></i> Quick Actions</h3>
+                    <button class="btn btn-outline btn-full" onclick="uploadCover()" style="margin-bottom: 0.5rem;">
+                        <i class="fas fa-image"></i> Upload Cover
+                    </button>
+                    <button class="btn btn-outline btn-full" onclick="previewBook()">
+                        <i class="fas fa-eye"></i> Preview
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cover Upload Modal -->
+    <div id="cover-modal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal('cover-modal')">
+                <i class="fas fa-times"></i>
+            </button>
+            <h2>Upload Book Cover</h2>
+            <div class="file-upload" id="cover-upload" onclick="document.getElementById('cover-input').click()">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <p><strong>Click to upload cover image</strong></p>
+                <p style="color: var(--gray); font-size: 0.875rem;">PNG, JPG up to 5MB</p>
+            </div>
+            <input type="file" id="cover-input" accept="image/*" style="display: none;" onchange="handleCoverUpload(event)">
+            <div id="cover-preview" class="preview-container" style="display: none;">
+                <img id="preview-img" class="preview-image" src="" alt="Cover preview" style="max-width: 300px; border-radius: var(--radius-lg);">
+            </div>
+        </div>
+    </div>
+
+    <!-- Supabase Client Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Supabase Configuration -->
+    <script src="supabase-config.js"></script>
+
+    <script src="app.js"></script>
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <script src="writer.js"></script>
+</body>
+</html>

@@ -34,11 +34,12 @@ if (fs.existsSync(assetsDir)) {
   if (!fs.existsSync(distAssetsDir)) {
     fs.mkdirSync(distAssetsDir);
   }
-  // Simple recursive copy (assuming simple structure)
-  execSync(`cp -R "${assetsDir}"/* "${distAssetsDir}"/`, { shell: true, stdio: 'ignore' }).catch(() => {
-    // Fallback for Windows if someone runs it locally (though ideally run on Vercel)
-    try { execSync(`xcopy /E /I /Y "${assetsDir}" "${distAssetsDir}"`, { stdio: 'ignore' }); } catch(e){}
-  });
+  // Use native cross-platform node API
+  try {
+    fs.cpSync(assetsDir, distAssetsDir, { recursive: true });
+  } catch (e) {
+    console.error('Failed to copy assets:', e);
+  }
   console.log('🖼️ Copied assets folder');
 }
 
