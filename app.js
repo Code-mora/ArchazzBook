@@ -173,6 +173,7 @@ function updateUIForLoggedInUser() {
 
 async function loadBooks() {
   const booksGrid = document.getElementById('books-grid');
+  if (!booksGrid) return;
   booksGrid.innerHTML = '';
 
   let books = [];

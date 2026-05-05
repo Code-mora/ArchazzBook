@@ -52,8 +52,8 @@ jsFiles.forEach(file => {
   if (fs.existsSync(path.join(rootDir, file))) {
     try {
       console.log(`⏳ Obfuscating ${file}...`);
-      // Run javascript-obfuscator using npx (will use local package if available)
-      execSync(`npx javascript-obfuscator ${file} --output dist/${file} --compact true --control-flow-flattening true --dead-code-injection true`, { stdio: 'inherit' });
+      // Use local binary to avoid npx prompt, and use lighter obfuscation settings to prevent OOM on Vercel
+      execSync(`node ./node_modules/javascript-obfuscator/bin/javascript-obfuscator ${file} --output dist/${file} --compact true`, { stdio: 'inherit' });
       console.log(`✅ Successfully obfuscated ${file}`);
     } catch (err) {
       console.error(`❌ Failed to obfuscate ${file}`, err);
