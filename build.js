@@ -27,6 +27,12 @@ function copyFiles(ext) {
 copyFiles('.html');
 copyFiles('.css');
 
+// Copy Service Worker explicitly (should not be obfuscated, must be in root)
+if (fs.existsSync(path.join(rootDir, 'firebase-messaging-sw.js'))) {
+  fs.copyFileSync(path.join(rootDir, 'firebase-messaging-sw.js'), path.join(distDir, 'firebase-messaging-sw.js'));
+  console.log('📋 Copied firebase-messaging-sw.js');
+}
+
 // 2. Copy assets folder
 const assetsDir = path.join(rootDir, 'assets');
 if (fs.existsSync(assetsDir)) {
