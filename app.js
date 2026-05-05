@@ -519,6 +519,31 @@ function setupEventListeners() {
       }
     });
   });
+
+  // Setup dropdown toggle for mobile/touch reliability
+  document.querySelectorAll('.dropdown-toggle').forEach(toggle => {
+    toggle.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      const dropdown = this.closest('.dropdown');
+      // Toggle active class
+      dropdown.classList.toggle('active');
+      
+      // Close other active dropdowns if any exist
+      document.querySelectorAll('.dropdown.active').forEach(other => {
+        if (other !== dropdown) other.classList.remove('active');
+      });
+    });
+  });
+
+  // Close dropdowns when clicking anywhere else
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.dropdown')) {
+      document.querySelectorAll('.dropdown.active').forEach(dropdown => {
+        dropdown.classList.remove('active');
+      });
+    }
+  });
 }
 
 function generateAboutImage() {

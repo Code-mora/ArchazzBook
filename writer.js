@@ -67,8 +67,9 @@ function saveBooksToStorage(booksData) {
 }
 
 document.addEventListener('DOMContentLoaded', async function () {
-  // Check authentication
-  checkWriterAuth();
+  // Check authentication first (await so we don't proceed if not logged in)
+  const isAuth = await checkWriterAuth();
+  if (!isAuth) return;
 
   // CRITICAL: Await checkEditMode so Supabase data is loaded BEFORE rendering
   // Previously this was not awaited, causing a race condition on slow mobile connections
@@ -85,24 +86,31 @@ document.addEventListener('DOMContentLoaded', async function () {
 // AUTHENTICATION
 // =============================
 
-function checkWriterAuth() {
-  const savedUser = localStorage.getItem('currentUser');
-
-  if (!savedUser) {
-    window.location.href = 'index.html';
-    return;
+async function checkWriterAuth() {
+  // Wait for SupabaseAPI to be ready (it loads async from supabase-config.js)
+  let attempts = 0;
+  while (!window.SupabaseAPI && attempts < 10) {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    attempts++;
   }
 
-  const user = JSON.parse(savedUser);
-
-  if (user.role !== 'author') {
-    alert('Access denied. Author privileges required.');
+  if (!window.SupabaseAPI) {
+    console.error('Supabase not loaded, redirecting...');
     window.location.href = 'index.html';
-    return;
+    return false;
   }
 
-  document.getElementById('user-name').textContent = user.name;
-  currentBook.author = user.name;
+  const session = await window.SupabaseAPI.getSession();
+
+  if (!session || !session.user) {
+    // Not logged in, redirect to home
+    window.location.href = 'index.html';
+    return false;
+  }
+
+  document.getElementById('user-name').textContent = 'Archazz';
+  currentBook.author = 'Archazz';
+  return true;
 }
 
 // =============================

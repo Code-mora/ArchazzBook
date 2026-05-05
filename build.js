@@ -6,12 +6,12 @@ console.log('🚀 Starting ArchazzBook build process...');
 
 // Directories
 const rootDir = __dirname;
-const distDir = path.join(rootDir, 'dist');
+const distDir = path.join(rootDir, 'public');
 
 // Create dist directory if it doesn't exist
 if (!fs.existsSync(distDir)) {
   fs.mkdirSync(distDir);
-  console.log('✅ Created dist directory');
+  console.log('✅ Created public directory');
 }
 
 // Helper function to copy files
@@ -53,7 +53,7 @@ jsFiles.forEach(file => {
     try {
       console.log(`⏳ Obfuscating ${file}...`);
       // Use local binary to avoid npx prompt, and use lighter obfuscation settings to prevent OOM on Vercel
-      execSync(`node ./node_modules/javascript-obfuscator/bin/javascript-obfuscator ${file} --output dist/${file} --compact true`, { stdio: 'inherit' });
+      execSync(`node ./node_modules/javascript-obfuscator/bin/javascript-obfuscator ${file} --output public/${file} --compact true`, { stdio: 'inherit' });
       console.log(`✅ Successfully obfuscated ${file}`);
     } catch (err) {
       console.error(`❌ Failed to obfuscate ${file}`, err);
@@ -63,4 +63,4 @@ jsFiles.forEach(file => {
   }
 });
 
-console.log('✨ Build process completed successfully! Output is in the "dist" folder.');
+console.log('✨ Build process completed successfully! Output is in the "public" folder.');
