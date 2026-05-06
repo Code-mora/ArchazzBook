@@ -133,7 +133,9 @@ async function loadDashboardBooks() {
 
   books.forEach((book) => {
     // Use cover_url from Supabase or cover from localStorage
-    const coverImage = book.cover_url || book.cover || 'https://via.placeholder.com/150x200?text=No+Cover';
+    const title = window.escapeHTML ? window.escapeHTML(book.title) : book.title;
+    const rawCover = book.cover_url || book.cover || 'https://via.placeholder.com/150x200?text=No+Cover';
+    const coverImage = window.escapeHTML ? window.escapeHTML(rawCover) : rawCover;
     const bookDate = book.created_at || book.date;
 
     // Determine status (default to 'published' for legacy books, 'draft' for new ones if no status)
@@ -159,10 +161,10 @@ async function loadDashboardBooks() {
       // Inline styles for mobile card structure
       card.innerHTML = `
         <div style="display: flex; gap: 1rem;">
-          <img src="${coverImage}" alt="${book.title}" style="width: 80px; height: 120px; object-fit: cover; border-radius: 6px; background: #f3f4f6;" onerror="this.src='https://via.placeholder.com/80x120?text=No+Cover'">
+          <img src="${coverImage}" alt="${title}" style="width: 80px; height: 120px; object-fit: cover; border-radius: 6px; background: #f3f4f6;" onerror="this.src='https://via.placeholder.com/80x120?text=No+Cover'">
           <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; overflow: hidden;">
             <div style="margin-bottom: 0.5rem;">${statusBadge}</div>
-            <h3 style="font-size: 1.125rem; font-weight: 700; margin: 0 0 0.25rem 0; color: #1f2937; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${book.title}</h3>
+            <h3 style="font-size: 1.125rem; font-weight: 700; margin: 0 0 0.25rem 0; color: #1f2937; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${title}</h3>
             <div style="font-size: 0.875rem; color: #6b7280; display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center;">
                <span><i class="fas fa-book"></i> ${book.pages || 0} pages</span>
                <span><i class="fas fa-calendar"></i> ${formatDate(bookDate)}</span>
@@ -183,10 +185,10 @@ async function loadDashboardBooks() {
     } else {
       const row = document.createElement('tr');
       row.innerHTML = `
-        <td><img src="${coverImage}" alt="${book.title}" class="book-thumbnail" onerror="this.src='https://via.placeholder.com/150x200?text=No+Cover'"></td>
+        <td><img src="${coverImage}" alt="${title}" class="book-thumbnail" onerror="this.src='https://via.placeholder.com/150x200?text=No+Cover'"></td>
         <td>
             <div style="display: flex; flex-direction: column; gap: 0.25rem;">
-                <strong style="font-size: 1rem;">${book.title}</strong>
+                <strong style="font-size: 1rem;">${title}</strong>
                 <div>${statusBadge}</div>
             </div>
         </td>

@@ -131,7 +131,7 @@ async function uploadCoverToSupabase(file, fileName) {
       .from(BOOK_COVERS_BUCKET)
       .upload(fileName, file, {
         cacheControl: '3600',
-        upsert: true,
+        upsert: false,
       });
 
     if (error) throw error;

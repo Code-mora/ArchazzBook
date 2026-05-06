@@ -82,19 +82,14 @@ function checkAuthState() {
         };
         updateUIForLoggedInUser();
       } else {
-        // Fallback to localStorage check for backward compatibility just in case, but clear it
-        const savedUser = localStorage.getItem('currentUser');
-        if (savedUser) {
-           localStorage.removeItem('currentUser');
-        }
+        // Clear any leftover insecure local storage
+        localStorage.removeItem('currentUser');
       }
     });
   } else {
-      const savedUser = localStorage.getItem('currentUser');
-      if (savedUser) {
-        currentUser = JSON.parse(savedUser);
-        updateUIForLoggedInUser();
-      }
+    console.warn("Supabase API not available, authentication skipped.");
+    // Clear any insecure fallback
+    localStorage.removeItem('currentUser');
   }
 }
 
@@ -270,6 +265,18 @@ function animateNumber(element, from, to, duration) {
   update();
 }
 
+function escapeHTML(str) {
+  if (!str) return '';
+  return str.toString()
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+window.escapeHTML = escapeHTML;
+
 function createBookCard(book) {
   const card = document.createElement('div');
   card.className = 'book-card';
@@ -277,24 +284,26 @@ function createBookCard(book) {
 
   // Store genre for filtering (default to 'other' if not set)
   card.dataset.genre = (book.genre || 'other').toLowerCase();
-  card.dataset.title = book.title.toLowerCase();
+  card.dataset.title = escapeHTML(book.title).toLowerCase();
 
     // Handle legacy vs Supabase fields
-    const authorName = book.author || book.author_name || 'Archazz';
+    const authorName = escapeHTML(book.author || book.author_name || 'Archazz');
     const dateValue = book.date || book.created_at || new Date().toISOString();
-    const genre = book.genre || 'General';
-    const pages = book.pages || '?';
-    const coverImage = book.cover_url || book.cover || 'https://via.placeholder.com/150x200?text=No+Cover';
+    const genre = escapeHTML(book.genre || 'General');
+    const pages = escapeHTML(book.pages || '?');
+    const title = escapeHTML(book.title);
+    const preview = escapeHTML(book.preview);
+    const coverImage = escapeHTML(book.cover_url || book.cover || 'https://via.placeholder.com/150x200?text=No+Cover');
     
     card.innerHTML = `
         <div class="book-cover-container">
-            <img src="${coverImage}" alt="${book.title}" loading="lazy" onerror="this.src='https://via.placeholder.com/150x200?text=No+Cover'">
+            <img src="${coverImage}" alt="${title}" loading="lazy" onerror="this.src='https://via.placeholder.com/150x200?text=No+Cover'">
             <span class="genre-badge">${genre}</span>
         </div>
         <div class="book-info">
-            <h3 class="book-title">${book.title}</h3>
+            <h3 class="book-title">${title}</h3>
             <p class="book-author">by ${authorName}</p>
-            <p class="book-preview">${book.preview}</p>
+            <p class="book-preview">${preview}</p>
             <div class="book-footer">
                 <div class="book-meta">
                     <span class="book-pages" title="Pages">
