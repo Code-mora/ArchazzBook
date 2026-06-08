@@ -698,6 +698,9 @@
                     <p>by <span id="reader-book-author">Malatie</span></p>
                 </div>
                 <div class="reader-controls">
+                    <button class="btn btn-outline" onclick="shareStory()" title="Share Story">
+                        <i class="fas fa-share-nodes"></i> Share
+                    </button>
                     <button class="btn btn-outline" onclick="window.history.back()">
                         <i class="fas fa-times"></i> Close
                     </button>
@@ -1594,6 +1597,48 @@
                 notification.style.animation = 'fadeOut 0.3s ease';
                 setTimeout(() => notification.remove(), 300);
             }, 2000);
+        }
+
+        // Share functionality
+        async function shareStory() {
+            if (!currentBook) return;
+
+            let shareUrl = window.location.href;
+            let chapterTitle = '';
+
+            if (currentBook.chapters && currentChapterId) {
+                const chapter = currentBook.chapters.find(c => c.id === currentChapterId);
+                if (chapter) chapterTitle = chapter.title;
+            }
+
+            const title = `${currentBook.title} - ArchazzBook`;
+            const text = chapterTitle ? `Read "${currentBook.title} - ${chapterTitle}" on ArchazzBook!` : `Read "${currentBook.title}" on ArchazzBook!`;
+
+            const shareData = {
+                title: title,
+                text: text,
+                url: shareUrl
+            };
+
+            try {
+                if (navigator.share) {
+                    await navigator.share(shareData);
+                } else {
+                    // Fallback for desktop/unsupported browsers
+                    await navigator.clipboard.writeText(shareUrl);
+                    showNotification('Link copied to clipboard!');
+                }
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error('Error sharing:', err);
+                    try {
+                        await navigator.clipboard.writeText(shareUrl);
+                        showNotification('Link copied to clipboard!');
+                    } catch (copyErr) {
+                        showNotification('Failed to copy link. Check your permissions.');
+                    }
+                }
+            }
         }
 
         // Keyboard navigation
