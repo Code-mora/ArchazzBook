@@ -1632,23 +1632,6 @@
                 url: shareUrl
             };
 
-            // Attempt to fetch cover image and attach as file for rich preview on mobile
-            const coverUrl = currentBook.cover_url || currentBook.cover;
-            if (coverUrl) {
-                try {
-                    const response = await fetch(coverUrl);
-                    const blob = await response.blob();
-                    const ext = blob.type.split('/')[1] || 'jpg';
-                    const file = new File([blob], `cover.${ext}`, { type: blob.type });
-                    
-                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                        shareData.files = [file];
-                    }
-                } catch (e) {
-                    console.warn("Could not fetch cover for sharing", e);
-                }
-            }
-
             try {
                 if (navigator.share) {
                     await navigator.share(shareData);
