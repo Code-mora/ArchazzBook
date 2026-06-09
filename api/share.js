@@ -1,5 +1,5 @@
 module.exports = async (req, res) => {
-    const { id } = req.query;
+    const { id, chapter_id } = req.query;
     
     // Default fallback values
     let title = 'Read on ArchazzBook';
@@ -76,7 +76,7 @@ module.exports = async (req, res) => {
     </div>
     <script>
         // Immediately redirect the real user to the reader page
-        window.location.replace("/reader.html${id ? '?id=' + id : ''}");
+        window.location.replace("/reader.html${id ? '?id=' + id : ''}${chapter_id ? '&chapter_id=' + chapter_id : ''}");
     </script>
 </body>
 </html>

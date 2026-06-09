@@ -709,7 +709,7 @@
                     <button class="btn btn-outline" onclick="shareStory()" title="Share Story">
                         <i class="fas fa-share-nodes"></i> Share
                     </button>
-                    <button class="btn btn-outline" onclick="window.history.back()">
+                    <button class="btn btn-outline" onclick="closeReader()">
                         <i class="fas fa-times"></i> Close
                     </button>
                 </div>
@@ -1306,8 +1306,20 @@
                 return;
             }
 
-            // Start with first chapter
-            currentChapterId = currentBook.chapters[0].id;
+            // Get chapter_id from URL if present
+            const targetChapterId = urlParams.get('chapter_id');
+            let initialChapter = currentBook.chapters[0].id;
+            
+            if (targetChapterId) {
+                // Verify the requested chapter exists in the filtered list
+                const chapterExists = currentBook.chapters.some(c => c.id == targetChapterId);
+                if (chapterExists) {
+                    initialChapter = parseInt(targetChapterId);
+                }
+            }
+
+            // Start with initial chapter
+            currentChapterId = initialChapter;
             
             // Add chapter selector if there are any chapters
             if (currentBook.chapters.length > 0) {
@@ -1605,6 +1617,17 @@
                 notification.style.animation = 'fadeOut 0.3s ease';
                 setTimeout(() => notification.remove(), 300);
             }, 2000);
+        }
+
+        function closeReader() {
+            // If the user arrived directly from a shared link, history.length is usually 1 or 2
+            // window.history.length > 2 is a safer check for whether they navigated from within the site
+            if (document.referrer && document.referrer.includes(window.location.host)) {
+                window.history.back();
+            } else {
+                // If they came from outside (WhatsApp/Discord), fallback to Home
+                window.location.href = 'index.html';
+            }
         }
 
         // Share functionality
