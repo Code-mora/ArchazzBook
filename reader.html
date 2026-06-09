@@ -5,6 +5,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reader - ArchazzBook</title>
+    
+    <!-- Open Graph Meta Tags for Link Previews -->
+    <meta property="og:title" content="Read on ArchazzBook">
+    <meta property="og:description" content="Discover and read captivating digital stories on ArchazzBook.">
+    <meta property="og:image" content="https://raw.githubusercontent.com/Code-mora/ArchazzBook/main/assets/about-illustration.jpg">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1603,12 +1611,16 @@
         async function shareStory() {
             if (!currentBook) return;
 
-            let shareUrl = window.location.href;
+            const baseUrl = window.location.origin;
+            let shareUrl = currentBook.id ? `${baseUrl}/api/share?id=${currentBook.id}` : window.location.href;
             let chapterTitle = '';
 
             if (currentBook.chapters && currentChapterId) {
                 const chapter = currentBook.chapters.find(c => c.id === currentChapterId);
-                if (chapter) chapterTitle = chapter.title;
+                if (chapter) {
+                    chapterTitle = chapter.title;
+                    shareUrl += `&chapter_id=${currentChapterId}`;
+                }
             }
 
             const title = `${currentBook.title} - ArchazzBook`;
@@ -1619,6 +1631,23 @@
                 text: text,
                 url: shareUrl
             };
+
+            // Attempt to fetch cover image and attach as file for rich preview on mobile
+            const coverUrl = currentBook.cover_url || currentBook.cover;
+            if (coverUrl) {
+                try {
+                    const response = await fetch(coverUrl);
+                    const blob = await response.blob();
+                    const ext = blob.type.split('/')[1] || 'jpg';
+                    const file = new File([blob], `cover.${ext}`, { type: blob.type });
+                    
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        shareData.files = [file];
+                    }
+                } catch (e) {
+                    console.warn("Could not fetch cover for sharing", e);
+                }
+            }
 
             try {
                 if (navigator.share) {
