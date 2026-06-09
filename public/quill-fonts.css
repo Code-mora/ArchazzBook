@@ -1,0 +1,104 @@
+/* Custom Font Families for Quill Editor */
+
+/* Fix picker container positioning */
+.ql-picker {
+    position: relative !important;
+}
+
+/* Fix font picker options to show as proper dropdown */
+.ql-picker.ql-font .ql-picker-options {
+    display: none !important;
+    position: absolute !important;
+    background: white !important;
+    border: 1px solid #ccc !important;
+    border-radius: 4px !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+    z-index: 1000 !important;
+    min-width: 100% !important;
+}
+
+.ql-picker.ql-font.ql-expanded .ql-picker-options {
+    display: block !important;
+}
+
+/* Fix font picker items to display as list */
+.ql-picker.ql-font .ql-picker-item {
+    display: block !important;
+    padding: 8px 12px !important;
+    white-space: nowrap !important;
+    cursor: pointer !important;
+}
+
+.ql-picker.ql-font .ql-picker-item:hover {
+    background: #f0f0f0 !important;
+}
+
+.ql-picker.ql-font .ql-picker-label {
+    width: auto !important;
+    min-width: 90px !important;
+    max-width: 120px !important;
+    padding-right: 25px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+/* Apply fonts to content */
+.ql-font-times-new-roman {
+    font-family: 'Times New Roman', Times, serif;
+}
+
+.ql-font-arial {
+    font-family: Arial, sans-serif;
+}
+
+.ql-font-georgia {
+    font-family: Georgia, serif;
+}
+
+.ql-font-courier {
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.ql-font-verdana {
+    font-family: Verdana, sans-serif;
+}
+
+/* Font dropdown labels in toolbar */
+.ql-picker.ql-font .ql-picker-label::before {
+    max-width: 90px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    display: inline-block !important;
+}
+
+.ql-picker.ql-font .ql-picker-label[data-value="times-new-roman"]::before,
+.ql-picker.ql-font .ql-picker-item[data-value="times-new-roman"]::before {
+    content: 'Times New Roman' !important;
+    font-family: 'Times New Roman', Times, serif !important;
+}
+
+.ql-picker.ql-font .ql-picker-label[data-value="arial"]::before,
+.ql-picker.ql-font .ql-picker-item[data-value="arial"]::before {
+    content: 'Arial' !important;
+    font-family: Arial, sans-serif !important;
+}
+
+.ql-picker.ql-font .ql-picker-label[data-value="georgia"]::before,
+.ql-picker.ql-font .ql-picker-item[data-value="georgia"]::before {
+    content: 'Georgia' !important;
+    font-family: Georgia, serif !important;
+}
+
+.ql-picker.ql-font .ql-picker-label[data-value="courier"]::before,
+.ql-picker.ql-font .ql-picker-item[data-value="courier"]::before {
+    content: 'Courier New' !important;
+    font-family: 'Courier New', Courier, monospace !important;
+}
+
+.ql-picker.ql-font .ql-picker-label[data-value="verdana"]::before,
+.ql-picker.ql-font .ql-picker-item[data-value="verdana"]::before {
+    content: 'Verdana' !important;
+    font-family: Verdana, sans-serif !important;
+}

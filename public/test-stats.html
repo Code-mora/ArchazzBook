@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Stats - ArchazzBook</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 2rem;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        h1 { color: #667EEA; }
+        button {
+            background: #667EEA;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            margin: 0.5rem;
+            font-weight: 600;
+        }
+        button:hover { background: #4F46E5; }
+        .stats {
+            background: #f0f0f0;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+        }
+        .success { color: #10B981; font-weight: bold; }
+        .error { color: #EF4444; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>📊 Stats Debug Tool</h1>
+        <p>Gunakan tool ini untuk mengecek apakah stats sudah dinamis atau masih hardcoded.</p>
+        
+        <div class="stats" id="current-stats">
+            <strong>Current Stats:</strong><br>
+            Books: <span id="books-stat">Loading...</span><br>
+            Readers: <span id="readers-stat">Loading...</span>
+        </div>
+
+        <button onclick="addDummyBook()">➕ Add Dummy Book</button>
+        <button onclick="addDummyViews()">👁️ Add Dummy Views</button>
+        <button onclick="checkStats()">🔍 Check Stats</button>
+        <button onclick="clearAllData()">🗑️ Clear All Data</button>
+        <button onclick="window.location.href='index.html'">🏠 Go to Home</button>
+
+        <div id="result" style="margin-top: 1rem;"></div>
+    </div>
+
+    <script>
+        function checkStats() {
+            const books = JSON.parse(localStorage.getItem('books') || '[]');
+            const views = JSON.parse(localStorage.getItem('booksViews') || '{}');
+            
+            document.getElementById('books-stat').textContent = books.length;
+            
+            let totalViews = 0;
+            if (Object.keys(views).length > 0) {
+                totalViews = Object.values(views).reduce((sum, val) => sum + val, 0);
+            }
+            const readers = Math.floor(totalViews * 0.35);
+            document.getElementById('readers-stat').textContent = readers;
+            
+            const result = document.getElementById('result');
+            result.innerHTML = `
+                <div class="stats">
+                    <strong>📦 LocalStorage Data:</strong><br>
+                    Books: ${books.length} book(s)<br>
+                    Total Views: ${totalViews}<br>
+                    Calculated Readers: ${readers}<br><br>
+                    <span class="${books.length > 0 ? 'success' : 'error'}">
+                        ${books.length > 0 ? '✅ Stats are DYNAMIC!' : '⚠️ No books yet - Stats will be 0'}
+                    </span>
+                </div>
+            `;
+        }
+
+        function addDummyBook() {
+            let books = JSON.parse(localStorage.getItem('books') || '[]');
+            const dummyBook = {
+                id: Date.now(),
+                title: "Test Book " + (books.length + 1),
+                author: "Archazz",
+                cover: "https://picsum.photos/300/420?random=" + Date.now(),
+                preview: "This is a test book to check if stats are working dynamically.",
+                story: "<p>This is a test story.</p>",
+                pages: 5,
+                date: new Date().toISOString().split('T')[0]
+            };
+            books.push(dummyBook);
+            localStorage.setItem('books', JSON.stringify(books));
+            
+            alert('✅ Dummy book added! Go to home to see the stats update.');
+            checkStats();
+        }
+
+        function addDummyViews() {
+            let views = JSON.parse(localStorage.getItem('booksViews') || '{}');
+            const books = JSON.parse(localStorage.getItem('books') || '[]');
+            
+            if (books.length === 0) {
+                alert('⚠️ Add a book first!');
+                return;
+            }
+            
+            books.forEach(book => {
+                views[book.id] = Math.floor(Math.random() * 450) + 50;
+            });
+            
+            localStorage.setItem('booksViews', JSON.stringify(views));
+            alert('✅ Dummy views added! Go to home to see the stats update.');
+            checkStats();
+        }
+
+        function clearAllData() {
+            if (confirm('Are you sure you want to clear all data?')) {
+                localStorage.removeItem('books');
+                localStorage.removeItem('booksViews');
+                alert('✅ All data cleared!');
+                checkStats();
+            }
+        }
+
+        // Check stats on load
+        checkStats();
+    </script>
+</body>
+</html>

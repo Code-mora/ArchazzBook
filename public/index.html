@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <base target="_self">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArchazzBook - Discover Amazing Stories</title>
+    <meta name="description" content="ArchazzBook - Your gateway to captivating digital stories">
+    
+    <!-- Open Graph Meta Tags for Link Previews -->
+    <meta property="og:title" content="ArchazzBook - Discover Amazing Stories">
+    <meta property="og:description" content="Your gateway to captivating digital stories. Read anywhere, anytime.">
+    <meta property="og:image" content="https://raw.githubusercontent.com/Code-mora/ArchazzBook/main/assets/about-illustration.jpg">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo">
+                <i class="fas fa-book-open"></i>
+                <span>ArchazzBook</span>
+            </a>
+            <div class="nav-links">
+                <a href="index.html" class="nav-link active">Home</a>
+                <a href="#featured" class="nav-link">Featured</a>
+                <a href="#about" class="nav-link">About</a>
+                <div id="auth-buttons" class="auth-buttons">
+                    <button class="btn btn-icon" onclick="document.getElementById('notification-banner').style.display = 'flex'" title="Enable Notifications">
+                        <i class="fas fa-bell"></i>
+                    </button>
+                    <button class="btn btn-outline" onclick="showLoginModal()">Author Login</button>
+                </div>
+                <div id="user-menu" class="user-menu" style="display: none;">
+                    <div class="user-avatar" style="overflow: hidden;">
+                        <img src="assets/images/logo-archazz.png" alt="Profile" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                    <div class="dropdown">
+                        <button class="dropdown-toggle">
+                            <span id="user-name">User</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="dropdown-menu">
+                            <a href="dashboard.html" id="dashboard-link" style="display: none;">
+                                <i class="fas fa-tachometer-alt"></i> Dashboard
+                            </a>
+                            <a href="#" onclick="logout()">
+                                <i class="fas fa-sign-out-alt"></i> Logout
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Notification Permission Banner (Hidden by default) -->
+    <div id="notif-banner" style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: white; padding: 15px 20px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 9999; align-items: center; gap: 15px; border: 1px solid #e2e8f0; max-width: 90%; width: 400px;">
+        <div style="font-size: 24px;">🔔</div>
+        <div style="flex: 1;">
+            <h4 style="margin: 0 0 4px; color: #1e293b; font-size: 16px;">Get Updates?</h4>
+            <p style="margin: 0; font-size: 13px; color: #64748b;">Don't miss replies or new chapters from your favorite authors.</p>
+        </div>
+        <div style="display: flex; gap: 8px;">
+            <button id="btn-dismiss-notif" style="background: none; border: none; font-size: 13px; color: #64748b; cursor: pointer; padding: 5px;">Later</button>
+            <button id="btn-allow-notif" style="background: var(--primary); color: white; border: none; padding: 6px 16px; border-radius: 20px; font-weight: 600; cursor: pointer; font-size: 13px;">Allow</button>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-background">
+            <div class="hero-gradient"></div>
+            <div class="floating-shapes">
+                <div class="shape shape-1"></div>
+                <div class="shape shape-2"></div>
+                <div class="shape shape-3"></div>
+            </div>
+        </div>
+        <div class="hero-content">
+            <div class="hero-text">
+                <h1 class="hero-title">
+                    Beautiful days
+                    <span class="gradient-text"> with Beautiful Stories</span>
+                </h1>
+                <p class="hero-subtitle">Welcome to My E-Book, I hope you enjoy reading my books</p>
+                <div class="hero-buttons">
+                    <button class="btn btn-large btn-primary" onclick="scrollToBooks()">
+                        <i class="fas fa-book"></i>
+                        Browse Books
+                    </button>
+                    <button class="btn btn-large btn-glass" onclick="scrollToBooks()">
+                        <i class="fas fa-rocket"></i>
+                        Start Reading Free
+                    </button>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat-item">
+                        <div class="stat-number" id="books-count">0</div>
+                        <div class="stat-label">Books Available</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="readers-count">0</div>
+                        <div class="stat-label">Happy Readers</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">24/7</div>
+                        <div class="stat-label">Access</div>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="book-showcase">
+                    <div class="book-3d">
+                        <div class="book-cover-3d"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured Books Section -->
+    <section id="featured" class="books-section">
+        <div class="section-container">
+            <div class="section-header">
+                <h2 class="section-title"> <span class="gradient-text">E-Books</span></h2>
+                <p class="section-subtitle">Explore our curated collection of captivating stories</p>
+            </div>
+            
+            <!-- Search & Filter Controls -->
+            <div class="books-controls">
+                <div class="search-bar">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="book-search" placeholder="Search books by title..." onkeyup="filterBooks()">
+                </div>
+                <div class="genre-filter">
+                    <i class="fas fa-filter"></i>
+                    <select id="genre-select" onchange="filterBooks()">
+                        <option value="all">All Genres</option>
+                        <option value="fiction">Fiction</option>
+                        <option value="fantasy">Fantasy</option>
+                        <option value="romance">Romance</option>
+                        <option value="mystery">Mystery</option>
+                        <option value="scifi">Sci-Fi</option>
+                        <option value="horror">Horror</option>
+                        <option value="adventure">Adventure</option>
+                        <option value="thriller">Thriller</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="books-grid" id="books-grid">
+                <!-- Books will be dynamically loaded here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="about-section">
+        <div class="section-container">
+            <div class="about-content">
+                <div class="about-text">
+                    <h2 class="section-title">About <span class="gradient-text">ArchazzBook</span></h2>
+                    <p>ArchazzBook I make for me especially. Because I have a interest to write and I want to share my stories with the world.</p>
+                    <p>Our platform is designed with readers in mind, offering a seamless and immersive reading experience across all devices. Whether you're at home or on the go, your next great adventure is just a click away.</p>
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-mobile-alt"></i>
+                            </div>
+                            <h3>Read Anywhere</h3>
+                            <p>Fully responsive design for all devices</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-book-reader"></i>
+                            </div>
+                            <h3>Easy Reading</h3>
+                            <p>Optimized typography and layout</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="fas fa-cloud"></i>
+                            </div>
+                            <h3>Always Updated</h3>
+                            <p>New stories added regularly</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="about-image">
+                    <div class="image-container">
+                        <img src="assets/about-illustration.jpg" alt="Reading illustration" id="about-img">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3><i class="fas fa-book-open"></i> ArchazzBook</h3>
+                <p>Your gateway to digital storytelling and literary adventures.</p>
+            </div>
+            <div class="footer-section">
+                <h4>Quick Links</h4>
+                <a href="#featured">Browse Books</a>
+                <a href="#about">About Us</a>
+                <a href="#" onclick="showLoginModal()">Author Login</a>
+            </div>
+            <div class="footer-section">
+                <h4>Connect</h4>
+                <div class="social-links">
+                    <a href="https://www.threads.com/@mahwazh_"><i class="fab fa-threads"></i></a>
+                    <a href="https://www.instagram.com/mahwazh_/"><i class="fab fa-instagram"></i></a>
+                    <a href="https://github.com/Code-mora"><i class="fab fa-github"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 ArchazzBook. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal('login-modal')">
+                <i class="fas fa-times"></i>
+            </button>
+            <h2>Author Login</h2>
+            <p class="modal-subtitle">Dashboard access for content creators</p>
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label for="login-username">Email</label>
+                    <input type="email" id="login-username" required placeholder="Masukkan Email">
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" required placeholder="Masukkan Password">
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">Login to Dashboard</button>
+            </form>
+            <p class="modal-footer" style="color: var(--gray); font-size: 0.875rem;"><i class="fas fa-info-circle"></i> Author access only</p>
+        </div>
+    </div>
+
+
+
+    <!-- Book Details Modal -->
+    <div id="book-modal" class="modal">
+        <div class="modal-content modal-large">
+            <button class="modal-close" onclick="closeModal('book-modal')">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="book-details">
+                <div class="book-details-cover">
+                    <img id="modal-book-cover" src="" alt="Book Cover">
+                </div>
+                <div class="book-details-info">
+                    <h2 id="modal-book-title"></h2>
+                    <p class="book-author">by <span id="modal-book-author">Archazz</span></p>
+                    <div class="book-meta">
+                        <span><i class="fas fa-calendar"></i> <span id="modal-book-date"></span></span>
+                        <span><i class="fas fa-book"></i> <span id="modal-book-pages"></span> pages</span>
+                    </div>
+                    <div class="book-preview">
+                        <h3>Preview</h3>
+                        <p id="modal-book-preview"></p>
+                    </div>
+                    <button class="btn btn-primary btn-large" onclick="readBook()">
+                        <i class="fas fa-book-reader"></i>
+                        Read Now
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Banner (Fixed Bottom) -->
+    <div id="notification-banner" class="notification-banner" style="display: none;">
+        <div class="notification-content">
+            <div class="notification-icon">
+                <i class="fas fa-bell"></i>
+            </div>
+            <div class="notification-text">
+                <h3>Enable Notifications?</h3>
+                <p>Get instant updates when new chapters are published!</p>
+            </div>
+        </div>
+        <div class="notification-actions">
+            <button id="btn-dismiss" class="btn btn-outline btn-sm">Later</button>
+            <button id="btn-allow" class="btn btn-primary btn-sm">Enable</button>
+        </div>
+    </div>
+
+    <!-- Supabase Client Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Supabase Configuration -->
+    <script src="supabase-config.js"></script>
+
+    <!-- App Logic -->
+    <script src="app.js"></script>
+    <!-- Notifications Script (Contains logic & UI handling) -->
+    <script type="module" src="notifications.js"></script>
+</body>
+</html>

@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Debug Books - ArchazzBook</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f5f5f5;
+        padding: 20px;
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      .container {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #333;
+        margin-top: 0;
+      }
+      h2 {
+        color: #666;
+        border-top: 2px solid #007bff;
+        padding-top: 20px;
+        margin-top: 30px;
+      }
+      .book-item {
+        background: #f9f9f9;
+        border: 1px solid #ddd;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 4px;
+      }
+      .book-item h3 {
+        margin: 0 0 10px 0;
+        color: #007bff;
+      }
+      .book-detail {
+        margin: 5px 0;
+        padding: 5px;
+        background: #fff;
+        border-left: 3px solid #007bff;
+        padding-left: 10px;
+      }
+      .book-detail strong {
+        color: #333;
+        display: inline-block;
+        width: 120px;
+      }
+      .cover-preview {
+        max-width: 100px;
+        max-height: 150px;
+        margin: 10px 0;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      .button-group {
+        margin: 20px 0;
+      }
+      button {
+        padding: 10px 20px;
+        margin: 5px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      .btn-primary {
+        background: #007bff;
+        color: white;
+      }
+      .btn-primary:hover {
+        background: #0056b3;
+      }
+      .btn-danger {
+        background: #dc3545;
+        color: white;
+      }
+      .btn-danger:hover {
+        background: #c82333;
+      }
+      .btn-success {
+        background: #28a745;
+        color: white;
+      }
+      .btn-success:hover {
+        background: #218838;
+      }
+      .info-box {
+        background: #e7f3ff;
+        border: 1px solid #b3d9ff;
+        padding: 15px;
+        border-radius: 4px;
+        margin: 20px 0;
+      }
+      .success-box {
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        padding: 15px;
+        border-radius: 4px;
+        margin: 20px 0;
+        color: #155724;
+      }
+      .error-box {
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+        padding: 15px;
+        border-radius: 4px;
+        margin: 20px 0;
+        color: #721c24;
+      }
+      pre {
+        background: #f4f4f4;
+        border: 1px solid #ddd;
+        padding: 10px;
+        border-radius: 4px;
+        overflow-x: auto;
+      }
+      .nav-link {
+        display: inline-block;
+        margin: 10px 10px 10px 0;
+        padding: 8px 15px;
+        background: #007bff;
+        color: white;
+        text-decoration: none;
+        border-radius: 4px;
+      }
+      .nav-link:hover {
+        background: #0056b3;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>📚 Debug Books Storage</h1>
+
+      <div class="nav-link" style="display: inline-block">
+        <a href="index.html" style="color: white; text-decoration: none"
+          >← Back to Home</a
+        >
+      </div>
+
+      <div id="content"></div>
+    </div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        displayBooksInfo();
+      });
+
+      function displayBooksInfo() {
+        const content = document.getElementById('content');
+        let html = '';
+
+        // Check localStorage books
+        const savedBooks = localStorage.getItem('books');
+        const books = savedBooks ? JSON.parse(savedBooks) : [];
+
+        html += '<h2>📊 Storage Summary</h2>';
+        html += `<div class="info-box">
+                <p><strong>Total Books Stored:</strong> ${books.length}</p>
+                <p><strong>Storage Size:</strong> ${new Blob([savedBooks || '']).size} bytes</p>
+            </div>`;
+
+        if (books.length === 0) {
+          html +=
+            '<div class="error-box">❌ No books found in localStorage!</div>';
+        } else {
+          html +=
+            '<div class="success-box">✅ Found ' +
+            books.length +
+            ' book(s) in localStorage</div>';
+        }
+
+        // Display each book
+        html += '<h2>📖 Books List</h2>';
+        if (books.length === 0) {
+          html += '<p style="color: #999;">No books stored yet.</p>';
+        } else {
+          books.forEach((book, index) => {
+            html += `<div class="book-item">
+                        <h3>${index + 1}. ${book.title || '(No Title)'}</h3>
+                        <div class="book-detail">
+                            <strong>ID:</strong> ${book.id}
+                        </div>
+                        <div class="book-detail">
+                            <strong>Author:</strong> ${book.author || 'N/A'}
+                        </div>
+                        <div class="book-detail">
+                            <strong>Genre:</strong> ${book.genre || 'N/A'}
+                        </div>
+                        <div class="book-detail">
+                            <strong>Pages:</strong> ${book.pages || 'N/A'}
+                        </div>
+                        <div class="book-detail">
+                            <strong>Date:</strong> ${book.date || 'N/A'}
+                        </div>
+                        <div class="book-detail">
+                            <strong>Preview:</strong> ${(book.preview || '').substring(0, 100)}...
+                        </div>`;
+
+            if (book.cover) {
+              html += `<div class="book-detail">
+                            <img src="${book.cover}" alt="Cover" class="cover-preview">
+                        </div>`;
+            }
+
+            html += `<div style="margin-top: 10px;">
+                        <small style="color: #999;">Raw JSON: <code>${JSON.stringify(book).substring(0, 100)}...</code></small>
+                    </div>
+                    </div>`;
+          });
+        }
+
+        // Actions
+        html += '<h2>⚙️ Actions</h2>';
+        html += '<div class="button-group">';
+        html +=
+          '<button class="btn-primary" onclick="exportBooks()">📥 Export Books (JSON)</button>';
+        html +=
+          '<button class="btn-success" onclick="importBooks()">📤 Import Books (JSON)</button>';
+        html +=
+          '<button class="btn-success" onclick="refreshPage()">🔄 Refresh</button>';
+        html +=
+          '<button class="btn-danger" onclick="clearAllBooks()">🗑️ Clear All Books</button>';
+        html += '</div>';
+
+        // Storage info
+        html += '<h2>💾 localStorage Info</h2>';
+        html += '<div class="info-box">';
+        html += '<p><strong>Raw localStorage.books:</strong></p>';
+        html +=
+          '<pre>' +
+          (savedBooks ? JSON.stringify(books, null, 2) : 'Empty') +
+          '</pre>';
+        html += '</div>';
+
+        content.innerHTML = html;
+      }
+
+      function exportBooks() {
+        const books = localStorage.getItem('books');
+        const dataStr = books || '[]';
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'archazz-books-backup.json';
+        link.click();
+      }
+
+      function importBooks() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        
+        input.onchange = function(e) {
+          const file = e.target.files[0];
+          if (!file) return;
+          
+          const reader = new FileReader();
+          reader.onload = function(event) {
+            try {
+              const importedData = JSON.parse(event.target.result);
+              
+              if (!Array.isArray(importedData)) {
+                alert('❌ Invalid file format. Must be a JSON array of books.');
+                return;
+              }
+              
+              const currentBooks = localStorage.getItem('books');
+              const currentData = currentBooks ? JSON.parse(currentBooks) : [];
+              
+              // Merge imported books with existing books
+              // If book ID exists, update it; otherwise add new
+              importedData.forEach(importedBook => {
+                const existingIndex = currentData.findIndex(b => b.id === importedBook.id);
+                if (existingIndex >= 0) {
+                  currentData[existingIndex] = importedBook;
+                  console.log('✏️ Updated book:', importedBook.title);
+                } else {
+                  currentData.push(importedBook);
+                  console.log('➕ Added new book:', importedBook.title);
+                }
+              });
+              
+              // Save merged data
+              localStorage.setItem('books', JSON.stringify(currentData));
+              
+              alert('✅ Successfully imported ' + importedData.length + ' book(s)!\n\nTotal books now: ' + currentData.length);
+              location.reload();
+            } catch (error) {
+              alert('❌ Error reading file: ' + error.message);
+            }
+          };
+          reader.readAsText(file);
+        };
+        
+        input.click();
+      }
+
+      function refreshPage() {
+        location.reload();
+      }
+
+      function clearAllBooks() {
+        if (
+          confirm(
+            '⚠️ Are you sure? This will delete ALL books! This cannot be undone.',
+          )
+        ) {
+          localStorage.removeItem('books');
+          alert('All books have been cleared.');
+          refreshPage();
+        }
+      }
+    </script>
+  </body>
+</html>
