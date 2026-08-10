@@ -26,12 +26,11 @@ A beautiful, modern e-book platform with role-based access for authors and reade
 ### 1. Open the Website
 Simply open `index.html` in your web browser.
 
-### 2. Author Login Credentials
-To access the author dashboard:
-- **Email**: `author@archazz.com`
-- **Password**: `archazz2026`
+### 2. Author Login
+Author access uses Supabase Auth. Create the author user in the Supabase dashboard
+(Authentication > Users) and sign in with those credentials on the login modal.
 
-> ⚠️ **IMPORTANT**: Change these credentials in `app.js` (lines 11-12) for security!
+> ⚠️ Never commit credentials to this repository.
 
 ### 3. Regular User Access
 Users can register with any email/password to browse and read books.
@@ -53,11 +52,8 @@ ARCHAZZ/
 ## 🎨 Customization
 
 ### Change Author Credentials
-Edit `app.js`:
-```javascript
-const AUTHOR_EMAIL = "your-email@example.com";
-const AUTHOR_PASSWORD = "your-secure-password";
-```
+Manage the author account in the Supabase dashboard (Authentication > Users).
+Credentials are never stored in the source code.
 
 ### Modify Color Scheme
 Edit the CSS variables in `styles.css`:

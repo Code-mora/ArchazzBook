@@ -48,7 +48,7 @@ Dashboard sekarang punya:
 ## Cara Menggunakan
 
 ### Menulis Buku Baru:
-1. Login sebagai author (username: `wazz`, password: `wazzhere`)
+1. Login sebagai author (gunakan kredensial Supabase Auth kamu)
 2. Klik **"Dashboard"**
 3. Klik **"Write New Book"**
 4. Masukkan judul buku

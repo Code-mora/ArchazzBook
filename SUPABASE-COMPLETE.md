@@ -30,7 +30,7 @@
 ## 🚀 HOW TO USE:
 
 ### **Create a New Book:**
-1. Login dengan `wazz` / `wazzhere`
+1. Login dengan kredensial Supabase Auth kamu
 2. Click **"New Book"** di dashboard
 3. Write your story
 4. Upload cover
