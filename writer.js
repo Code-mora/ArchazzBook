@@ -100,7 +100,15 @@ async function checkWriterAuth() {
     return false;
   }
 
-  const session = await window.SupabaseAPI.getSession();
+  let session;
+  try {
+    session = await window.SupabaseAPI.getSession();
+  } catch (error) {
+    // A failed lookup isn't proof of being signed out; don't discard a draft in progress
+    console.error('❌ Error verifying session:', error);
+    showNotification('Could not verify your session. Please reload the page.');
+    return false;
+  }
 
   if (!session || !session.user) {
     // Not logged in, redirect to home
@@ -136,7 +144,8 @@ async function checkEditMode() {
 
 async function loadExistingBook(bookId) {
   let book = null;
-  
+  let fetchFailed = false;
+
   // 1. Try Supabase first (to ensure we get the latest cloud updates, like drafts from other devices)
   if (window.SupabaseAPI) {
     try {
@@ -145,6 +154,7 @@ async function loadExistingBook(bookId) {
       book = sbBooks.find(b => b.id == bookId);
     } catch (err) {
       console.error('❌ Error fetching from Supabase:', err);
+      fetchFailed = true;
     }
   }
 
@@ -156,8 +166,14 @@ async function loadExistingBook(bookId) {
   }
 
   if (!book) {
-    console.error('❌ Book with ID ' + bookId + ' not found anywhere.');
-    alert('Book not found. Returning to dashboard.');
+    if (fetchFailed) {
+      // Don't tell the author their book is gone when we simply couldn't reach the server
+      console.error('❌ Could not load book ' + bookId + ' — the server request failed.');
+      alert('Could not load this book. Please check your connection and try again.');
+    } else {
+      console.error('❌ Book with ID ' + bookId + ' not found anywhere.');
+      alert('Book not found. Returning to dashboard.');
+    }
     window.location.href = 'dashboard.html';
     return;
   }
@@ -813,7 +829,12 @@ async function saveBook(action = 'draft', isAutoSave = false) {
         coverUrl = await window.SupabaseAPI.uploadCover(file, fileName);
         console.log('✅ Cover uploaded to Supabase:', coverUrl);
       } catch (uploadError) {
+        // Falling back to the inline base64 cover keeps the save working, but the
+        // author must know the cover wasn't stored in the cloud.
         console.error('⚠️ Failed to upload cover to Supabase:', uploadError);
+        if (!isAutoSave) {
+          showNotification('Cover upload failed — saving with the local image instead.');
+        }
       }
     }
 
@@ -881,7 +902,14 @@ async function saveBook(action = 'draft', isAutoSave = false) {
       books.push(localStorageData);
     }
 
-    saveBooksToStorage(books);
+    const localSaveOk = saveBooksToStorage(books);
+    if (!localSaveOk && !window.SupabaseAPI) {
+      // Nothing persisted the book anywhere — never report this as a success
+      throw new Error('Could not save the book to local storage');
+    }
+    if (!localSaveOk) {
+      console.warn('⚠️ Book saved to Supabase but the local copy could not be written');
+    }
 
     // Debug log
     console.log('Book saved:', localStorageData.title);
@@ -907,7 +935,14 @@ async function saveBook(action = 'draft', isAutoSave = false) {
 
   } catch (error) {
     console.error('❌ Error saving book:', error);
-    showNotification('Failed to save book. Please try again.');
+    // Clear the auto-save indicator so it doesn't sit there implying a save happened
+    const titleEl = document.getElementById('book-title');
+    if (titleEl) titleEl.style.borderRight = 'none';
+    showNotification(
+      isAutoSave
+        ? 'Auto-save failed. Your latest changes are not saved yet.'
+        : 'Failed to save book. Please try again.',
+    );
   }
 }
 

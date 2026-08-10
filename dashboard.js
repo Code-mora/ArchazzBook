@@ -47,28 +47,41 @@ function saveBooksToStorage(booksData) {
 
 
 document.addEventListener('DOMContentLoaded', function () {
-  // Check authentication
-  checkDashboardAuth();
-
-  // Load books
-  loadDashboardBooks();
-
-  // Update stats
-  updateStats();
+  // These are async; surface rejections instead of leaving them unhandled
+  checkDashboardAuth().catch((e) => console.error('❌ Auth check failed:', e));
+  loadDashboardBooks().catch((e) => console.error('❌ Loading books failed:', e));
+  updateStats().catch((e) => console.error('❌ Updating stats failed:', e));
 });
 
 // =============================
 // AUTHENTICATION CHECK
 // =============================
 
-async function checkDashboardAuth() {
+const AUTH_RETRY_LIMIT = 20; // ~10s at 500ms per attempt
+
+async function checkDashboardAuth(attempt = 0) {
   if (!window.SupabaseAPI) {
-    // Supabase not loaded yet, wait and retry
-    setTimeout(checkDashboardAuth, 500);
+    // Supabase not loaded yet, wait and retry — but give up eventually instead of
+    // polling forever while the page silently shows an unauthenticated dashboard.
+    if (attempt >= AUTH_RETRY_LIMIT) {
+      console.error('❌ Supabase never became available; cannot verify session.');
+      showNotification('Could not reach the server. Please reload the page.');
+      return;
+    }
+    setTimeout(() => checkDashboardAuth(attempt + 1), 500);
     return;
   }
 
-  const session = await window.SupabaseAPI.getSession();
+  let session;
+  try {
+    session = await window.SupabaseAPI.getSession();
+  } catch (error) {
+    // A failed lookup is not proof of being signed out — don't bounce the author
+    // back to the home page on a transient network error.
+    console.error('❌ Error verifying dashboard session:', error);
+    showNotification('Could not verify your session. Please reload the page.');
+    return;
+  }
 
   if (!session || !session.user) {
     // Not logged in, redirect to home
@@ -86,6 +99,7 @@ async function checkDashboardAuth() {
 
 async function loadDashboardBooks() {
   let books = [];
+  let loadFailed = false;
 
   // Try Supabase first
   if (window.SupabaseAPI) {
@@ -96,6 +110,7 @@ async function loadDashboardBooks() {
     } catch (error) {
       console.error('Dashboard: Error loading from Supabase:', error);
       books = getBooksFromStorage();
+      loadFailed = books.length === 0;
     }
   } else {
     books = getBooksFromStorage();
@@ -105,6 +120,20 @@ async function loadDashboardBooks() {
 
   const tbody = document.getElementById('books-table-body');
   tbody.innerHTML = '';
+
+  // Never render a failed load as "no books" — the author could publish a duplicate
+  if (loadFailed) {
+    const message = `
+            <i class="fas fa-triangle-exclamation" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
+            <p>Could not load your books. Check your connection and try again.</p>
+            <button class="btn btn-outline" style="margin-top: 1rem;" onclick="loadDashboardBooks()">Retry</button>
+        `;
+    tbody.innerHTML =
+      window.innerWidth <= 768
+        ? `<div style="text-align: center; padding: 2rem; color: var(--gray);">${message}</div>`
+        : `<tr><td colspan="5" style="text-align: center; padding: 3rem; color: var(--gray);">${message}</td></tr>`;
+    return;
+  }
 
   if (books.length === 0) {
     const isMobile = window.innerWidth <= 768;
@@ -219,7 +248,7 @@ window.addEventListener('resize', function () {
     (currentWidth > 768 && window.lastMobileState)
   ) {
     window.lastMobileState = currentWidth <= 768;
-    loadDashboardBooks();
+    loadDashboardBooks().catch((e) => console.error('❌ Loading books failed:', e));
   }
 });
 
@@ -258,7 +287,11 @@ function handleBookSubmit(event) {
   books.push(newBook);
 
   // Save to localStorage using robust utility
-  saveBooksToStorage(books);
+  if (!saveBooksToStorage(books)) {
+    // Reporting success on a failed write loses the author's work silently
+    showNotification('Failed to save the book. Your browser storage may be full.');
+    return;
+  }
 
   // Show success message
   showNotification('Book published successfully!');
@@ -273,8 +306,8 @@ function handleBookSubmit(event) {
   toggleUploadForm();
 
   // Reload books
-  loadDashboardBooks();
-  updateStats();
+  loadDashboardBooks().catch((e) => console.error('❌ Loading books failed:', e));
+  updateStats().catch((e) => console.error('❌ Updating stats failed:', e));
 }
 
 function handleCoverUpload(event) {
@@ -290,6 +323,11 @@ function handleCoverUpload(event) {
 
   // Read file as base64
   const reader = new FileReader();
+
+  reader.onerror = function () {
+    console.error('❌ Error reading cover image:', reader.error);
+    alert('Could not read that image file. Please try another one.');
+  };
 
   reader.onload = function (e) {
     uploadedCover = e.target.result;
@@ -327,14 +365,16 @@ async function deleteBook(bookId) {
     // Also remove from localStorage for backward compatibility
     let books = getBooksFromStorage();
     books = books.filter((b) => b.id !== bookId);
-    saveBooksToStorage(books);
+    if (!saveBooksToStorage(books)) {
+      console.warn('⚠️ Book deleted remotely but the local cache could not be updated');
+    }
 
     // Show notification
     showNotification('Book deleted successfully');
 
     // Reload
     await loadDashboardBooks();
-    updateStats();
+    await updateStats();
   } catch (error) {
     console.error('❌ Error deleting book:', error);
     showNotification('Failed to delete book. Please try again.');
@@ -370,7 +410,7 @@ function editBook(bookId) {
 
   // Delete the old book (will be replaced when form is submitted)
   books = books.filter((b) => b.id !== bookId);
-  localStorage.setItem('books', JSON.stringify(books));
+  saveBooksToStorage(books);
 }
 
 // =============================
@@ -406,6 +446,7 @@ function toggleUploadForm() {
 
 async function updateStats() {
   let books = [];
+  let statsAreStale = false;
 
   // Try Supabase first
   if (window.SupabaseAPI) {
@@ -414,9 +455,14 @@ async function updateStats() {
     } catch (error) {
       console.error('Error fetching books for stats:', error);
       books = getBooksFromStorage();
+      statsAreStale = true;
     }
   } else {
     books = getBooksFromStorage();
+  }
+
+  if (statsAreStale) {
+    showNotification('Showing cached stats — could not reach the server.');
   }
 
   // Total Books - Real count
@@ -437,7 +483,14 @@ async function updateStats() {
     viewsData = JSON.stringify(views);
   }
 
-  const views = JSON.parse(viewsData);
+  let views = {};
+  try {
+    views = JSON.parse(viewsData) || {};
+  } catch (error) {
+    // Corrupted cache should not blank out the whole stats panel
+    console.error('❌ Corrupted booksViews in localStorage, resetting:', error);
+    localStorage.removeItem('booksViews');
+  }
   totalViews = Object.values(views).reduce((sum, val) => sum + val, 0);
   document.getElementById('total-views').textContent =
     totalViews.toLocaleString();
@@ -451,7 +504,13 @@ async function updateStats() {
 async function logout() {
   if (confirm('Are you sure you want to logout?')) {
     if (window.SupabaseAPI) {
-      await window.SupabaseAPI.signOut();
+      try {
+        await window.SupabaseAPI.signOut();
+      } catch (error) {
+        // Local state is cleared either way, but the failure must be visible.
+        console.error('❌ Error signing out:', error);
+        alert('Signed out locally, but the server could not be reached.');
+      }
     }
     localStorage.removeItem('currentUser');
     window.location.href = 'index.html';

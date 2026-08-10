@@ -41,11 +41,8 @@ if (fs.existsSync(assetsDir)) {
     fs.mkdirSync(distAssetsDir);
   }
   // Use native cross-platform node API
-  try {
-    fs.cpSync(assetsDir, distAssetsDir, { recursive: true });
-  } catch (e) {
-    console.error('Failed to copy assets:', e);
-  }
+  // An incomplete asset copy produces a broken deployment, so fail the build
+  fs.cpSync(assetsDir, distAssetsDir, { recursive: true });
   console.log('🖼️ Copied assets folder');
 }
 
@@ -54,19 +51,34 @@ const jsFiles = ['app.js', 'dashboard.js', 'writer.js', 'supabase-config.js', 'n
 
 console.log('🔒 Starting JavaScript Obfuscation...');
 
+const unobfuscated = [];
+const missing = [];
+
 jsFiles.forEach(file => {
-  if (fs.existsSync(path.join(rootDir, file))) {
-    try {
-      console.log(`⏳ Obfuscating ${file}...`);
-      // Use local binary to avoid npx prompt, and use lighter obfuscation settings to prevent OOM on Vercel
-      execSync(`node ./node_modules/javascript-obfuscator/bin/javascript-obfuscator ${file} --output public/${file} --compact true`, { stdio: 'inherit' });
-      console.log(`✅ Successfully obfuscated ${file}`);
-    } catch (err) {
-      console.error(`❌ Failed to obfuscate ${file}`, err);
-      // Fallback: just copy it if obfuscation fails
-      fs.copyFileSync(path.join(rootDir, file), path.join(distDir, file));
-    }
+  if (!fs.existsSync(path.join(rootDir, file))) {
+    missing.push(file);
+    return;
+  }
+  try {
+    console.log(`⏳ Obfuscating ${file}...`);
+    // Use local binary to avoid npx prompt, and use lighter obfuscation settings to prevent OOM on Vercel
+    execSync(`node ./node_modules/javascript-obfuscator/bin/javascript-obfuscator ${file} --output public/${file} --compact true`, { stdio: 'inherit' });
+    console.log(`✅ Successfully obfuscated ${file}`);
+  } catch (err) {
+    console.error(`❌ Failed to obfuscate ${file}`, err);
+    // Fallback: ship the readable source rather than nothing, but report it below
+    fs.copyFileSync(path.join(rootDir, file), path.join(distDir, file));
+    unobfuscated.push(file);
   }
 });
 
-console.log('✨ Build process completed successfully! Output is in the "public" folder.');
+if (missing.length) {
+  // A renamed or deleted entry point would otherwise vanish from the bundle unnoticed
+  throw new Error(`Expected JS files are missing from the project root: ${missing.join(', ')}`);
+}
+
+if (unobfuscated.length) {
+  console.warn(`⚠️ Build completed, but these files were shipped unobfuscated: ${unobfuscated.join(', ')}`);
+} else {
+  console.log('✨ Build process completed successfully! Output is in the "public" folder.');
+}

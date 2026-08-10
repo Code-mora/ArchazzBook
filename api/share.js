@@ -10,6 +10,8 @@ module.exports = async (req, res) => {
     const SUPABASE_URL = 'https://ohruaeodmwbvhrcvrzgy.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ocnVhZW9kbXdidmhyY3Zyemd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAyNzY0MDAsImV4cCI6MjA4NTg1MjQwMH0.e9SE-3gE9qfWbde-QD5gWR0VLUKF7PDgKg-0I3Uk5ys';
 
+    let metadataFailed = false;
+
     if (id) {
         try {
             // Fetch book details from Supabase via REST API
@@ -20,7 +22,12 @@ module.exports = async (req, res) => {
                 }
             });
             
-            if (response.ok) {
+            if (!response.ok) {
+                metadataFailed = true;
+                console.error(
+                    `Share preview: Supabase responded ${response.status} ${response.statusText} for book ${id}`
+                );
+            } else {
                 const books = await response.json();
                 if (books && books.length > 0) {
                     const book = books[0];
@@ -36,6 +43,7 @@ module.exports = async (req, res) => {
                 }
             }
         } catch (error) {
+            metadataFailed = true;
             console.error('Error fetching book for share preview:', error);
         }
     }
@@ -83,6 +91,11 @@ module.exports = async (req, res) => {
     `;
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
+    // Never cache a generic preview produced by a failed lookup — it would keep
+    // serving wrong metadata long after the backend recovered.
+    res.setHeader(
+        'Cache-Control',
+        metadataFailed ? 'no-store' : 's-maxage=60, stale-while-revalidate=300'
+    );
     res.status(200).send(html);
 };

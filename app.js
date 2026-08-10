@@ -73,19 +73,25 @@ document.addEventListener('DOMContentLoaded', function () {
 
 function checkAuthState() {
   if (window.SupabaseAPI) {
-    window.SupabaseAPI.getSession().then((session) => {
-      if (session && session.user) {
-        currentUser = {
-          name: 'Archazz (Author)',
-          email: session.user.email,
-          role: 'author',
-        };
-        updateUIForLoggedInUser();
-      } else {
-        // Clear any leftover insecure local storage
-        localStorage.removeItem('currentUser');
-      }
-    });
+    window.SupabaseAPI.getSession()
+      .then((session) => {
+        if (session && session.user) {
+          currentUser = {
+            name: 'Archazz (Author)',
+            email: session.user.email,
+            role: 'author',
+          };
+          updateUIForLoggedInUser();
+        } else {
+          // Clear any leftover insecure local storage
+          localStorage.removeItem('currentUser');
+        }
+      })
+      .catch((error) => {
+        // A failed session lookup is not the same as being signed out: keep the
+        // logged-out UI but make the failure visible instead of dropping it.
+        console.error('❌ Could not verify session:', error);
+      });
   } else {
     console.warn("Supabase API not available, authentication skipped.");
     // Clear any insecure fallback
@@ -126,24 +132,46 @@ async function handleLogin(event) {
     }
   } catch (error) {
     console.error('Login error:', error);
-    alert('Invalid author credentials. Please try again.');
+    // Distinguish rejected credentials from connectivity/config failures so the
+    // author is not told their password is wrong when the backend is unreachable.
+    const isAuthFailure =
+      error && (error.status === 400 || /invalid login credentials/i.test(error.message || ''));
+    alert(
+      isAuthFailure
+        ? 'Invalid author credentials. Please try again.'
+        : 'Could not sign in: ' + (error.message || 'unknown error'),
+    );
   }
 }
 
 async function logout() {
+  let signOutFailed = false;
+
   if (window.SupabaseAPI) {
-    await window.SupabaseAPI.signOut();
+    try {
+      await window.SupabaseAPI.signOut();
+    } catch (error) {
+      // Still clear local state, but tell the user the server session may survive.
+      console.error('❌ Error signing out:', error);
+      signOutFailed = true;
+    }
   }
-  
+
   currentUser = null;
   localStorage.removeItem('currentUser');
 
-  // Update UI
-  document.getElementById('auth-buttons').style.display = 'flex';
-  document.getElementById('user-menu').style.display = 'none';
+  // Update UI (these elements only exist on pages with the full navbar)
+  const authButtons = document.getElementById('auth-buttons');
+  const userMenu = document.getElementById('user-menu');
+  if (authButtons) authButtons.style.display = 'flex';
+  if (userMenu) userMenu.style.display = 'none';
 
-  showNotification('Logged out successfully');
-  
+  showNotification(
+    signOutFailed
+      ? 'Signed out locally, but the server could not be reached.'
+      : 'Logged out successfully',
+  );
+
   // If on dashboard, redirect to home
   if (window.location.pathname.includes('dashboard.html')) {
     window.location.href = 'index.html';
@@ -151,15 +179,22 @@ async function logout() {
 }
 
 function updateUIForLoggedInUser() {
-  document.getElementById('auth-buttons').style.display = 'none';
-  document.getElementById('user-menu').style.display = 'flex';
-  document.getElementById('user-name').textContent = currentUser.name;
+  // app.js is shared by pages without the full navbar (e.g. the reader), so a
+  // missing element must not abort the rest of the auth flow.
+  const authButtons = document.getElementById('auth-buttons');
+  const userMenu = document.getElementById('user-menu');
+  const userName = document.getElementById('user-name');
+  if (authButtons) authButtons.style.display = 'none';
+  if (userMenu) userMenu.style.display = 'flex';
+  if (userName) userName.textContent = currentUser.name;
 
   // Show dashboard link for author
   if (currentUser.role === 'author') {
     const dashboardLink = document.getElementById('dashboard-link');
-    dashboardLink.style.display = 'flex';
-    dashboardLink.href = 'dashboard.html';
+    if (dashboardLink) {
+      dashboardLink.style.display = 'flex';
+      dashboardLink.href = 'dashboard.html';
+    }
   }
 }
 
@@ -172,6 +207,7 @@ async function loadBooks() {
   booksGrid.innerHTML = '';
 
   let books = [];
+  let loadFailed = false;
 
   // Try to load from Supabase first
   if (window.SupabaseAPI) {
@@ -190,18 +226,32 @@ async function loadBooks() {
       console.error('❌ Failed to load from Supabase:', error);
       // Fallback to localStorage
       console.log('⏳ Falling back to localStorage...');
-      const savedBooks = getBooksFromStorage();
-      books = savedBooks.length > 0 ? savedBooks : [];
+      books = getBooksFromStorage();
+      loadFailed = books.length === 0;
     }
   } else {
     // Supabase not available, use localStorage
     console.log('📦 Loading books from localStorage...');
-    const savedBooks = getBooksFromStorage();
-    books = savedBooks.length > 0 ? savedBooks : [];
+    books = getBooksFromStorage();
   }
 
   // Update hero stats
   updateHeroStats(books);
+
+  // A failed load must not masquerade as an empty library
+  if (loadFailed) {
+    booksGrid.innerHTML = `
+            <div style="grid-column: 1/-1; text-align: center; padding: 4rem 2rem;">
+                <i class="fas fa-triangle-exclamation" style="font-size: 4rem; color: var(--gray); margin-bottom: 1rem; display: block;"></i>
+                <h3 style="font-size: 1.5rem; color: var(--dark); margin-bottom: 0.5rem;">Couldn't Load Books</h3>
+                <p style="color: var(--gray);">Something went wrong while loading the library. Please check your connection and try again.</p>
+                <button class="btn btn-primary" style="margin-top: 1.5rem;" onclick="loadBooks()">
+                    <i class="fas fa-rotate-right"></i> Retry
+                </button>
+            </div>
+        `;
+    return;
+  }
 
   // Show empty state if no books
   if (books.length === 0) {
@@ -231,7 +281,7 @@ async function updateHeroStats(books) {
   }
 
   // Ambil jumlah "Happy Readers" yang NYATA dari tabel reactions di Supabase
-  let totalReaders = 0;
+  let totalReaders = null;
   if (window.SupabaseAPI && window.SupabaseAPI.countHappyReaders) {
     try {
       totalReaders = await window.SupabaseAPI.countHappyReaders();
@@ -240,10 +290,15 @@ async function updateHeroStats(books) {
     }
   }
 
-  // Update readers count with animation
+  // Update readers count with animation. A failed count stays blank instead of
+  // animating to a fabricated 0.
   const readersCount = document.getElementById('readers-count');
   if (readersCount) {
-    animateNumber(readersCount, 0, totalReaders, 1000);
+    if (totalReaders === null) {
+      readersCount.textContent = '—';
+    } else {
+      animateNumber(readersCount, 0, totalReaders, 1000);
+    }
   }
 }
 
@@ -388,7 +443,10 @@ async function showBookDetails(bookId) {
   }
 
   const book = books.find((b) => b.id === bookId);
-  if (!book) return;
+  if (!book) {
+    showNotification('Sorry, this book could not be opened right now.');
+    return;
+  }
 
   const coverImage = book.cover_url || book.cover || 'https://via.placeholder.com/150x200?text=No+Cover';
   document.getElementById('modal-book-cover').src = coverImage;

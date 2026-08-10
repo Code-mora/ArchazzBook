@@ -812,13 +812,28 @@
         let currentPageInChapter = 1;
         let currentBook = null;
 
+        // Parses a localStorage entry, discarding it if it is corrupted
+        function readStoredJSON(key, fallback) {
+            const raw = localStorage.getItem(key);
+            if (raw === null) return fallback;
+            try {
+                const parsed = JSON.parse(raw);
+                return parsed === null ? fallback : parsed;
+            } catch (e) {
+                console.error(`❌ Corrupted "${key}" in localStorage, clearing:`, e);
+                localStorage.removeItem(key);
+                return fallback;
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             // Get current user for auth checks
-            const savedUser = localStorage.getItem('currentUser');
-            if (savedUser) {
-                window.currentUser = JSON.parse(savedUser);
-            }
-            loadBook();
+            // A corrupt entry must not abort the whole reader initialisation
+            window.currentUser = readStoredJSON('currentUser', null);
+            loadBook().catch(e => {
+                console.error('❌ Failed to load book:', e);
+                alert('Could not open this book. Please check your connection and try again.');
+            });
         });
 
         // --- Comments Logic ---
@@ -872,11 +887,11 @@
                     const timeAgo = formatTimeAgo(new Date(comment.created_at));
                     
                     // Check logic for permissions
-                    const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+                    const currentUser = readStoredJSON('currentUser', null);
                     const isAuthorUser = currentUser && currentUser.role === 'author';
                     
                     // Check if this comment belongs to the anonymous user
-                    const myComments = JSON.parse(localStorage.getItem('my_comments') || '[]');
+                    const myComments = readStoredJSON('my_comments', []);
                     const isMyComment = myComments.includes(comment.id);
                     
                     // Rules:
@@ -1036,7 +1051,7 @@
             }
             
             // Identity logic
-            const currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+            const currentUser = readStoredJSON('currentUser', null);
             const isAuthor = currentUser && currentUser.role === 'author';
             
             // Random name for anon, or 'Archazz' for author
@@ -1090,7 +1105,7 @@
                 }
                 
                 // Save to my_comments in localStorage so I can edit/delete it later
-                const myComments = JSON.parse(localStorage.getItem('my_comments') || '[]');
+                const myComments = readStoredJSON('my_comments', []);
                 myComments.push(result.id);
                 localStorage.setItem('my_comments', JSON.stringify(myComments));
                 
@@ -1225,28 +1240,28 @@
             }
 
             let books = [];
-            
+            let fetchFailed = false;
+
             // Try Supabase first to get fresh data (critical for draft -> published sync)
             if (window.SupabaseAPI) {
                 try {
                     books = await window.SupabaseAPI.fetchBooks();
-                    
+
                     // Optional: update local cache with fresh data
-                    localStorage.setItem('books', JSON.stringify(books));
+                    try {
+                        localStorage.setItem('books', JSON.stringify(books));
+                    } catch (e) {
+                        console.warn('⚠️ Could not update local books cache:', e);
+                    }
                 } catch (e) {
                     console.error('Failed to fetch from Supabase in reader, falling back to local', e);
-                    // Fallback to localStorage
-                    const savedBooks = localStorage.getItem('books');
-                    if (savedBooks) {
-                        books = JSON.parse(savedBooks);
-                    }
+                    fetchFailed = true;
+                    books = readStoredJSON('books', []);
                 }
             } else {
                 // Fallback if no Supabase
-                const savedBooks = localStorage.getItem('books');
-                if (savedBooks) {
-                    books = JSON.parse(savedBooks);
-                } else if (window.ArchazzBook && window.ArchazzBook.books) {
+                books = readStoredJSON('books', []);
+                if (books.length === 0 && window.ArchazzBook && window.ArchazzBook.books) {
                     books = window.ArchazzBook.books;
                 }
             }
@@ -1254,7 +1269,10 @@
             let book = books.find(b => b.id === bookId);
 
             if (!book) {
-                alert('Book not found');
+                // Distinguish "this book doesn't exist" from "we couldn't load anything"
+                alert(fetchFailed
+                    ? 'Could not load this book. Please check your connection and try again.'
+                    : 'Book not found');
                 window.location.href = 'index.html';
                 return;
             }
