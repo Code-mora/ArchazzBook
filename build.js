@@ -50,7 +50,7 @@ if (fs.existsSync(assetsDir)) {
 }
 
 // 3. Obfuscate JS files
-const jsFiles = ['app.js', 'dashboard.js', 'writer.js', 'supabase-config.js', 'notifications.js'];
+const jsFiles = ['shared-utils.js', 'app.js', 'dashboard.js', 'writer.js', 'supabase-config.js', 'notifications.js'];
 
 console.log('🔒 Starting JavaScript Obfuscation...');
 

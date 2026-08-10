@@ -9,45 +9,8 @@ let books = [];
 // User authentication state
 let currentUser = null;
 
-// =============================
-// LOCALSTORAGE UTILITIES
-// =============================
-
-// Get books from localStorage with fallback
-function getBooksFromStorage() {
-  try {
-    const savedBooks = localStorage.getItem('books');
-    if (savedBooks) {
-      const parsed = JSON.parse(savedBooks);
-      console.log('📚 Retrieved ' + parsed.length + ' books from localStorage');
-      return parsed;
-    }
-  } catch (e) {
-    console.error('❌ Error reading books from localStorage:', e);
-  }
-  return [];
-}
-
-// Save books to localStorage with verification
-function saveBooksToStorage(booksData) {
-  try {
-    localStorage.setItem('books', JSON.stringify(booksData));
-    // Verify save
-    const verify = localStorage.getItem('books');
-    if (verify) {
-      console.log(
-        '✅ Successfully saved ' + booksData.length + ' books to localStorage',
-      );
-      return true;
-    } else {
-      console.error('❌ Verification failed - data may not have been saved');
-      return false;
-    }
-  } catch (e) {
-    console.error('❌ Error saving books to localStorage:', e);
-    return false;
-  }
-}
+// Shared helpers (getBooksFromStorage, formatDate, showNotification, modals, ...)
+// live in shared-utils.js and are exposed as globals.
 
 // =============================
 // INITIALIZATION
@@ -171,47 +134,21 @@ async function loadBooks() {
   if (!booksGrid) return;
   booksGrid.innerHTML = '';
 
-  let books = [];
+  let books = await fetchBooksWithFallback('Home');
 
-  // Try to load from Supabase first
-  if (window.SupabaseAPI) {
-    try {
-      console.log('📚 Loading books from Supabase...');
-      books = await window.SupabaseAPI.fetchBooks();
-      console.log(`✅ Loaded ${books.length} books from Supabase`);
-      
-      // Filter for published books only
-      // New books usually don't have a status or are 'published' by default if from localStorage logic fallback
-      // But now we filter strictly for 'published' if the field exists
-      books = books.filter(book => !book.status || book.status === 'published');
-      console.log(`🔎 Filtered: ${books.length} published books`);
-
-    } catch (error) {
-      console.error('❌ Failed to load from Supabase:', error);
-      // Fallback to localStorage
-      console.log('⏳ Falling back to localStorage...');
-      const savedBooks = getBooksFromStorage();
-      books = savedBooks.length > 0 ? savedBooks : [];
-    }
-  } else {
-    // Supabase not available, use localStorage
-    console.log('📦 Loading books from localStorage...');
-    const savedBooks = getBooksFromStorage();
-    books = savedBooks.length > 0 ? savedBooks : [];
-  }
+  // Only published books are listed (legacy books have no status field)
+  books = books.filter((book) => !book.status || book.status === 'published');
+  console.log(`🔎 Filtered: ${books.length} published books`);
 
   // Update hero stats
   updateHeroStats(books);
 
   // Show empty state if no books
   if (books.length === 0) {
-    booksGrid.innerHTML = `
-            <div style="grid-column: 1/-1; text-align: center; padding: 4rem 2rem;">
-                <i class="fas fa-book" style="font-size: 4rem; color: var(--gray); margin-bottom: 1rem; display: block;"></i>
-                <h3 style="font-size: 1.5rem; color: var(--dark); margin-bottom: 0.5rem;">No Books Yet</h3>
-                <p style="color: var(--gray);">Books will appear here once the author uploads them.</p>
-            </div>
-        `;
+    booksGrid.innerHTML = emptyStateHTML({
+      title: 'No Books Yet',
+      message: 'Books will appear here once the author uploads them.',
+    });
     return;
   }
 
@@ -265,18 +202,6 @@ function animateNumber(element, from, to, duration) {
   update();
 }
 
-function escapeHTML(str) {
-  if (!str) return '';
-  return str.toString()
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-
-window.escapeHTML = escapeHTML;
-
 function createBookCard(book) {
   const card = document.createElement('div');
   card.className = 'book-card';
@@ -287,17 +212,17 @@ function createBookCard(book) {
   card.dataset.title = escapeHTML(book.title).toLowerCase();
 
     // Handle legacy vs Supabase fields
-    const authorName = escapeHTML(book.author || book.author_name || 'Archazz');
-    const dateValue = book.date || book.created_at || new Date().toISOString();
+    const authorName = escapeHTML(getBookAuthor(book));
+    const dateValue = getBookDate(book);
     const genre = escapeHTML(book.genre || 'General');
     const pages = escapeHTML(book.pages || '?');
     const title = escapeHTML(book.title);
     const preview = escapeHTML(book.preview);
-    const coverImage = escapeHTML(book.cover_url || book.cover || 'https://via.placeholder.com/150x200?text=No+Cover');
+    const coverImage = escapeHTML(getBookCover(book));
     
     card.innerHTML = `
         <div class="book-cover-container">
-            <img src="${coverImage}" alt="${title}" loading="lazy" onerror="this.src='https://via.placeholder.com/150x200?text=No+Cover'">
+            <img src="${coverImage}" alt="${title}" loading="lazy" onerror="this.src='${PLACEHOLDER_COVER}'">
             <span class="genre-badge">${genre}</span>
         </div>
         <div class="book-info">
@@ -360,11 +285,12 @@ function filterBooks() {
       noResultsMsg.id = 'no-results-message';
       noResultsMsg.style.cssText =
         'grid-column: 1/-1; text-align: center; padding: 4rem 2rem;';
-      noResultsMsg.innerHTML = `
-                <i class="fas fa-search" style="font-size: 4rem; color: var(--gray); margin-bottom: 1rem; display: block;"></i>
-                <h3 style="font-size: 1.5rem; color: var(--dark); margin-bottom: 0.5rem;">No Books Found</h3>
-                <p style="color: var(--gray);">Try adjusting your search or filter criteria.</p>
-            `;
+      noResultsMsg.innerHTML = emptyStateHTML({
+        icon: 'fa-search',
+        title: 'No Books Found',
+        message: 'Try adjusting your search or filter criteria.',
+        wrap: false,
+      });
       booksGrid.appendChild(noResultsMsg);
     }
   } else if (noResultsMsg) {
@@ -373,31 +299,18 @@ function filterBooks() {
 }
 
 async function showBookDetails(bookId) {
-  let books = [];
-
-  // Try Supabase first
-  if (window.SupabaseAPI) {
-    try {
-      books = await window.SupabaseAPI.fetchBooks();
-    } catch (error) {
-      console.error('Error fetching from Supabase:', error);
-      books = getBooksFromStorage();
-    }
-  } else {
-    books = getBooksFromStorage();
-  }
+  const books = await fetchBooksWithFallback('Book details');
 
   const book = books.find((b) => b.id === bookId);
   if (!book) return;
 
-  const coverImage = book.cover_url || book.cover || 'https://via.placeholder.com/150x200?text=No+Cover';
-  document.getElementById('modal-book-cover').src = coverImage;
+  document.getElementById('modal-book-cover').src = getBookCover(book);
   document.getElementById('modal-book-title').textContent = book.title;
-  document.getElementById('modal-book-author').textContent =
-    book.author_name || book.author || 'Archazz';
-  
-  const dateValue = book.created_at || book.date || new Date().toISOString();
-  document.getElementById('modal-book-date').textContent = formatDate(dateValue);
+  document.getElementById('modal-book-author').textContent = getBookAuthor(book);
+
+  document.getElementById('modal-book-date').textContent = formatDate(
+    getBookDate(book),
+  );
   document.getElementById('modal-book-pages').textContent = book.pages;
   document.getElementById('modal-book-preview').textContent = book.preview;
 
@@ -415,18 +328,6 @@ function readBook() {
 // =============================
 // MODAL MANAGEMENT
 // =============================
-
-function openModal(modalId) {
-  const modal = document.getElementById(modalId);
-  modal.classList.add('active');
-  document.body.style.overflow = 'hidden';
-}
-
-function closeModal(modalId) {
-  const modal = document.getElementById(modalId);
-  modal.classList.remove('active');
-  document.body.style.overflow = 'auto';
-}
 
 function showLoginModal() {
   openModal('login-modal');
@@ -447,60 +348,12 @@ function switchToLogin() {
   openModal('login-modal');
 }
 
-// Close modal when clicking outside
-document.addEventListener('click', function (event) {
-  if (event.target.classList.contains('modal')) {
-    closeModal(event.target.id);
-  }
-});
-
 // =============================
 // UI UTILITIES
 // =============================
 
-function toggleMobileMenu() {
-  const navLinks = document.querySelector('.nav-links');
-  navLinks.classList.toggle('active');
-}
-
 function scrollToBooks() {
   document.getElementById('featured').scrollIntoView({ behavior: 'smooth' });
-}
-
-function formatDate(dateString) {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-}
-
-function showNotification(message) {
-  // Create notification element
-  const notification = document.createElement('div');
-  notification.style.cssText = `
-        position: fixed;
-        top: 100px;
-        right: 2rem;
-        background: linear-gradient(135deg, #667EEA 0%, #764BA2 100%);
-        color: white;
-        padding: 1rem 1.5rem;
-        border-radius: 1rem;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-        z-index: 3000;
-        animation: slideInRight 0.3s ease;
-        max-width: 300px;
-    `;
-  notification.textContent = message;
-
-  document.body.appendChild(notification);
-
-  // Remove after 3 seconds
-  setTimeout(() => {
-    notification.style.animation = 'slideOutRight 0.3s ease';
-    setTimeout(() => notification.remove(), 300);
-  }, 3000);
 }
 
 function setupEventListeners() {
@@ -563,20 +416,6 @@ function generateAboutImage() {
     aboutImg.alt = 'Reading and storytelling';
   }
 }
-
-// =============================
-// KEYBOARD SHORTCUTS
-// =============================
-
-document.addEventListener('keydown', function (event) {
-  // ESC to close modals
-  if (event.key === 'Escape') {
-    const activeModal = document.querySelector('.modal.active');
-    if (activeModal) {
-      closeModal(activeModal.id);
-    }
-  }
-});
 
 // =============================
 // EXPORT FOR OTHER PAGES

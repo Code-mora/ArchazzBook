@@ -5,46 +5,8 @@
 let uploadedCover = null;
 let quillEditor = null;
 
-// =============================
-// LOCALSTORAGE UTILITIES
-// =============================
-
-// Get books from localStorage with fallback
-function getBooksFromStorage() {
-  try {
-    const savedBooks = localStorage.getItem('books');
-    if (savedBooks) {
-      const parsed = JSON.parse(savedBooks);
-      console.log('📚 Retrieved ' + parsed.length + ' books from localStorage');
-      return parsed;
-    }
-  } catch (e) {
-    console.error('❌ Error reading books from localStorage:', e);
-  }
-  return [];
-}
-
-// Save books to localStorage with verification
-function saveBooksToStorage(booksData) {
-  try {
-    localStorage.setItem('books', JSON.stringify(booksData));
-    // Verify save
-    const verify = localStorage.getItem('books');
-    if (verify) {
-      console.log(
-        '✅ Successfully saved ' + booksData.length + ' books to localStorage',
-      );
-      return true;
-    } else {
-      console.error('❌ Verification failed - data may not have been saved');
-      return false;
-    }
-  } catch (e) {
-    console.error('❌ Error saving books to localStorage:', e);
-    return false;
-  }
-}
-
+// Shared helpers (getBooksFromStorage, formatDate, showNotification, ...) live
+// in shared-utils.js and are exposed as globals.
 
 document.addEventListener('DOMContentLoaded', function () {
   // Check authentication
@@ -62,9 +24,9 @@ document.addEventListener('DOMContentLoaded', function () {
 // =============================
 
 async function checkDashboardAuth() {
-  if (!window.SupabaseAPI) {
-    // Supabase not loaded yet, wait and retry
-    setTimeout(checkDashboardAuth, 500);
+  if (!(await waitForSupabase())) {
+    console.error('Supabase not loaded, redirecting...');
+    window.location.href = 'index.html';
     return;
   }
 
@@ -85,23 +47,7 @@ async function checkDashboardAuth() {
 // =============================
 
 async function loadDashboardBooks() {
-  let books = [];
-
-  // Try Supabase first
-  if (window.SupabaseAPI) {
-    try {
-      console.log('Dashboard: Loading books from Supabase...');
-      books = await window.SupabaseAPI.fetchBooks();
-      console.log('Dashboard: Loaded', books.length, 'books from Supabase');
-    } catch (error) {
-      console.error('Dashboard: Error loading from Supabase:', error);
-      books = getBooksFromStorage();
-    }
-  } else {
-    books = getBooksFromStorage();
-  }
-
-  console.log('Books:', books);
+  const books = await fetchBooksWithFallback('Dashboard');
 
   const tbody = document.getElementById('books-table-body');
   tbody.innerHTML = '';
@@ -109,23 +55,15 @@ async function loadDashboardBooks() {
   if (books.length === 0) {
     const isMobile = window.innerWidth <= 768;
 
-    if (isMobile) {
-      tbody.innerHTML = `
-                <div style="text-align: center; padding: 2rem; color: var(--gray);">
-                    <i class="fas fa-book" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
-                    <p>No books yet. Start by adding your first book!</p>
-                </div>
-            `;
-    } else {
-      tbody.innerHTML = `
-                <tr>
-                    <td colspan="5" style="text-align: center; padding: 3rem; color: var(--gray);">
-                        <i class="fas fa-book" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
-                        <p>No books yet. Start by adding your first book!</p>
-                    </td>
-                </tr>
-            `;
-    }
+    const emptyBody = emptyStateHTML({
+      iconSize: '3rem',
+      message: 'No books yet. Start by adding your first book!',
+      wrap: false,
+    });
+
+    tbody.innerHTML = isMobile
+      ? `<div style="text-align: center; padding: 2rem; color: var(--gray);">${emptyBody}</div>`
+      : `<tr><td colspan="5" style="text-align: center; padding: 3rem; color: var(--gray);">${emptyBody}</td></tr>`;
     return;
   }
 
@@ -133,10 +71,9 @@ async function loadDashboardBooks() {
 
   books.forEach((book) => {
     // Use cover_url from Supabase or cover from localStorage
-    const title = window.escapeHTML ? window.escapeHTML(book.title) : book.title;
-    const rawCover = book.cover_url || book.cover || 'https://via.placeholder.com/150x200?text=No+Cover';
-    const coverImage = window.escapeHTML ? window.escapeHTML(rawCover) : rawCover;
-    const bookDate = book.created_at || book.date;
+    const title = escapeHTML(book.title);
+    const coverImage = escapeHTML(getBookCover(book));
+    const bookDate = getBookDate(book);
 
     // Determine status (default to 'published' for legacy books, 'draft' for new ones if no status)
     const status = book.status || 'published';
@@ -185,7 +122,7 @@ async function loadDashboardBooks() {
     } else {
       const row = document.createElement('tr');
       row.innerHTML = `
-        <td><img src="${coverImage}" alt="${title}" class="book-thumbnail" onerror="this.src='https://via.placeholder.com/150x200?text=No+Cover'"></td>
+        <td><img src="${coverImage}" alt="${title}" class="book-thumbnail" onerror="this.src='${PLACEHOLDER_COVER}'"></td>
         <td>
             <div style="display: flex; flex-direction: column; gap: 0.25rem;">
                 <strong style="font-size: 1rem;">${title}</strong>
@@ -277,38 +214,24 @@ function handleBookSubmit(event) {
   updateStats();
 }
 
-function handleCoverUpload(event) {
-  const file = event.target.files[0];
+async function handleCoverUpload(event) {
+  const dataUrl = await readImageFile(event.target.files[0]);
+  if (!dataUrl) return;
 
-  if (!file) return;
+  uploadedCover = dataUrl;
 
-  // Check file size (5MB max)
-  if (file.size > 5 * 1024 * 1024) {
-    alert('File size must be less than 5MB');
-    return;
-  }
+  // Show preview
+  document.getElementById('preview-img').src = uploadedCover;
+  document.getElementById('cover-preview').style.display = 'flex';
 
-  // Read file as base64
-  const reader = new FileReader();
-
-  reader.onload = function (e) {
-    uploadedCover = e.target.result;
-
-    // Show preview
-    document.getElementById('preview-img').src = uploadedCover;
-    document.getElementById('cover-preview').style.display = 'flex';
-
-    // Update upload UI
-    const uploadDiv = document.getElementById('cover-upload');
-    uploadDiv.classList.add('has-file');
-    uploadDiv.innerHTML = `
+  // Update upload UI
+  const uploadDiv = document.getElementById('cover-upload');
+  uploadDiv.classList.add('has-file');
+  uploadDiv.innerHTML = `
             <i class="fas fa-check-circle" style="color: #10B981;"></i>
             <p><strong>Cover uploaded successfully</strong></p>
             <p style="color: var(--gray); font-size: 0.875rem;">Click to change</p>
         `;
-  };
-
-  reader.readAsDataURL(file);
 }
 
 async function deleteBook(bookId) {
@@ -370,7 +293,7 @@ function editBook(bookId) {
 
   // Delete the old book (will be replaced when form is submitted)
   books = books.filter((b) => b.id !== bookId);
-  localStorage.setItem('books', JSON.stringify(books));
+  saveBooksToStorage(books);
 }
 
 // =============================
@@ -405,19 +328,7 @@ function toggleUploadForm() {
 }
 
 async function updateStats() {
-  let books = [];
-
-  // Try Supabase first
-  if (window.SupabaseAPI) {
-    try {
-      books = await window.SupabaseAPI.fetchBooks();
-    } catch (error) {
-      console.error('Error fetching books for stats:', error);
-      books = getBooksFromStorage();
-    }
-  } else {
-    books = getBooksFromStorage();
-  }
+  const books = await fetchBooksWithFallback('Stats');
 
   // Total Books - Real count
   const totalBooks = books.length;
@@ -458,88 +369,4 @@ async function logout() {
   }
 }
 
-// =============================
-// UTILITIES
-// =============================
-
-function formatDate(dateString) {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
-}
-
-function showNotification(message) {
-  const notification = document.createElement('div');
-  notification.style.cssText = `
-        position: fixed;
-        top: 100px;
-        right: 2rem;
-        background: linear-gradient(135deg, #667EEA 0%, #764BA2 100%);
-        color: white;
-        padding: 1rem 1.5rem;
-        border-radius: 1rem;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-        z-index: 3000;
-        animation: slideInRight 0.3s ease;
-        max-width: 300px;
-    `;
-  notification.textContent = message;
-
-  document.body.appendChild(notification);
-
-  setTimeout(() => {
-    notification.style.animation = 'slideOutRight 0.3s ease';
-    setTimeout(() => notification.remove(), 300);
-  }, 3000);
-}
-
-// Add animation styles
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideInRight {
-        from {
-            transform: translateX(400px);
-            opacity: 0;
-        }
-        to {
-            transform: translateX(0);
-            opacity: 1;
-        }
-    }
-    
-    @keyframes slideOutRight {
-        from {
-            transform: translateX(0);
-            opacity: 1;
-        }
-        to {
-            transform: translateX(400px);
-            opacity: 0;
-        }
-    }
-`;
-document.head.appendChild(style);
-
-/* =============================
-   MOBILE MENU TOGGLE
-   ============================= */
-function toggleMobileMenu() {
-    const navLinks = document.getElementById('nav-links');
-    navLinks.classList.toggle('active');
-    
-    // Animate icon
-    const icon = document.querySelector('.mobile-menu-btn i');
-    if (navLinks.classList.contains('active')) {
-        icon.classList.remove('fa-bars');
-        icon.classList.add('fa-times');
-    } else {
-        icon.classList.remove('fa-times');
-        icon.classList.add('fa-bars');
-    }
-}
-// Make it global
-window.toggleMobileMenu = toggleMobileMenu;
 

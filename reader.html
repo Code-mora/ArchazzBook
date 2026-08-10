@@ -802,7 +802,10 @@
     
     <!-- Supabase Configuration -->
     <script src="supabase-config.js"></script>
-    
+
+    <!-- Shared Utilities -->
+    <script src="shared-utils.js"></script>
+
     <!-- App Logic -->
     <script src="app.js"></script>
     <script>
@@ -1115,32 +1118,6 @@
             }
         }
 
-        function formatTimeAgo(date) {
-            const seconds = Math.floor((new Date() - date) / 1000);
-            let interval = seconds / 31536000;
-            if (interval > 1) return Math.floor(interval) + "y ago";
-            interval = seconds / 2592000;
-            if (interval > 1) return Math.floor(interval) + "mo ago";
-            interval = seconds / 86400;
-            if (interval > 1) return Math.floor(interval) + "d ago";
-            interval = seconds / 3600;
-            if (interval > 1) return Math.floor(interval) + "h ago";
-            interval = seconds / 60;
-            if (interval > 1) return Math.floor(interval) + "m ago";
-            return "Just now";
-        }
-        
-        function escapeHtml(text) {
-            const map = {
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#039;'
-            };
-            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
-        }
-
         // --- Emoji Reactions Logic ---
         const emojis = ['😊', '😍', '🔥', '😢', '😂'];
 
@@ -1224,31 +1201,12 @@
                 return;
             }
 
-            let books = [];
-            
-            // Try Supabase first to get fresh data (critical for draft -> published sync)
+            // Supabase first to get fresh data (critical for draft -> published sync)
+            const books = await fetchBooksWithFallback('Reader');
+
             if (window.SupabaseAPI) {
-                try {
-                    books = await window.SupabaseAPI.fetchBooks();
-                    
-                    // Optional: update local cache with fresh data
-                    localStorage.setItem('books', JSON.stringify(books));
-                } catch (e) {
-                    console.error('Failed to fetch from Supabase in reader, falling back to local', e);
-                    // Fallback to localStorage
-                    const savedBooks = localStorage.getItem('books');
-                    if (savedBooks) {
-                        books = JSON.parse(savedBooks);
-                    }
-                }
-            } else {
-                // Fallback if no Supabase
-                const savedBooks = localStorage.getItem('books');
-                if (savedBooks) {
-                    books = JSON.parse(savedBooks);
-                } else if (window.ArchazzBook && window.ArchazzBook.books) {
-                    books = window.ArchazzBook.books;
-                }
+                // Refresh the local cache with the fresh data
+                saveBooksToStorage(books);
             }
 
             let book = books.find(b => b.id === bookId);
@@ -1595,29 +1553,15 @@
             }
         }
 
-        function showNotification(message) {
-            const notification = document.createElement('div');
-            notification.style.cssText = `
-                position: fixed;
-                bottom: 2rem;
-                right: 2rem;
-                background: linear-gradient(135deg, #667EEA 0%, #764BA2 100%);
-                color: white;
-                padding: 1rem 1.5rem;
-                border-radius: 1rem;
-                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-                z-index: 3000;
-                animation: slideUp 0.3s ease;
-            `;
-            notification.textContent = message;
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                notification.style.animation = 'fadeOut 0.3s ease';
-                setTimeout(() => notification.remove(), 300);
-            }, 2000);
-        }
+        // Reader notifications sit at the bottom of the viewport
+        const showReaderNotification = (message) =>
+            window.ArchazzUtils.showNotification(message, {
+                position: 'bottom',
+                duration: 2000,
+                animationIn: 'slideUp',
+                animationOut: 'fadeOut',
+            });
+        window.showNotification = showReaderNotification;
 
         function closeReader() {
             // Check if user came from within the site, but NOT from the share redirect script
