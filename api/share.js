@@ -1,38 +1,70 @@
+const DEFAULT_IMAGE =
+    'https://raw.githubusercontent.com/Code-mora/ArchazzBook/main/assets/about-illustration.jpg';
+const SITE_ORIGIN = 'https://archazzbook.vercel.app';
+
+// Public (anon) Supabase credentials. Read-only access is enforced by RLS.
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://ohruaeodmwbvhrcvrzgy.supabase.co';
+// The anon key is public by design (it is also shipped in the browser bundle) and only
+// grants what RLS allows, but prefer the environment value when it is configured.
+const SUPABASE_ANON_KEY =
+    process.env.SUPABASE_ANON_KEY ||
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ocnVhZW9kbXdidmhyY3Zyemd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAyNzY0MDAsImV4cCI6MjA4NTg1MjQwMH0.e9SE-3gE9qfWbde-QD5gWR0VLUKF7PDgKg-0I3Uk5ys';
+
+function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, (char) => {
+        switch (char) {
+            case '&': return '&amp;';
+            case '<': return '&lt;';
+            case '>': return '&gt;';
+            case '"': return '&quot;';
+            default: return '&#39;';
+        }
+    });
+}
+
+// Only positive integers are valid book/chapter identifiers
+function parseId(value) {
+    if (typeof value !== 'string' || !/^\d{1,19}$/.test(value)) return null;
+    return value;
+}
+
+// Reject javascript:/data: and other non-http(s) URLs before putting them in meta tags
+function safeImageUrl(value) {
+    try {
+        const url = new URL(value);
+        return url.protocol === 'http:' || url.protocol === 'https:' ? url.toString() : DEFAULT_IMAGE;
+    } catch (e) {
+        return DEFAULT_IMAGE;
+    }
+}
+
 module.exports = async (req, res) => {
-    const { id, chapter_id } = req.query;
-    
-    // Default fallback values
+    const id = parseId(req.query.id);
+    const chapterId = parseId(req.query.chapter_id);
+
     let title = 'Read on ArchazzBook';
     let description = 'Discover and read captivating digital stories on ArchazzBook.';
-    let image = 'https://raw.githubusercontent.com/Code-mora/ArchazzBook/main/assets/about-illustration.jpg';
-    
-    // Supabase Credentials (public anon key is safe here for read-only access)
-    const SUPABASE_URL = 'https://ohruaeodmwbvhrcvrzgy.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ocnVhZW9kbXdidmhyY3Zyemd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAyNzY0MDAsImV4cCI6MjA4NTg1MjQwMH0.e9SE-3gE9qfWbde-QD5gWR0VLUKF7PDgKg-0I3Uk5ys';
+    let image = DEFAULT_IMAGE;
 
-    if (id) {
+    if (id && SUPABASE_ANON_KEY) {
         try {
-            // Fetch book details from Supabase via REST API
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/books?id=eq.${id}&select=title,cover_url,preview,chapters`, {
-                headers: {
-                    'apikey': SUPABASE_ANON_KEY,
-                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+            const response = await fetch(
+                `${SUPABASE_URL}/rest/v1/books?id=eq.${id}&select=title,cover_url,preview`,
+                {
+                    headers: {
+                        apikey: SUPABASE_ANON_KEY,
+                        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+                    },
                 }
-            });
-            
+            );
+
             if (response.ok) {
                 const books = await response.json();
                 if (books && books.length > 0) {
                     const book = books[0];
                     title = `${book.title} - ArchazzBook`;
-                    if (book.preview) {
-                        description = book.preview;
-                    }
-                    if (book.cover_url) {
-                        image = book.cover_url;
-                    }
-                    
-                    // Note: If we passed chapter_id, we could potentially extract chapter title from `book.chapters` JSONB array here.
+                    if (book.preview) description = book.preview;
+                    if (book.cover_url) image = safeImageUrl(book.cover_url);
                 }
             }
         } catch (error) {
@@ -40,27 +72,37 @@ module.exports = async (req, res) => {
         }
     }
 
-    // HTML Template with Open Graph Tags and a JavaScript Redirect
+    const readerPath = `/reader.html${id ? `?id=${id}` : ''}${
+        id && chapterId ? `&chapter_id=${chapterId}` : ''
+    }`;
+
+    const safeTitle = escapeHtml(title);
+    const safeDescription = escapeHtml(description);
+    const safeImage = escapeHtml(image);
+    const safeCanonical = escapeHtml(`${SITE_ORIGIN}${readerPath}`);
+    // readerPath only contains validated numeric ids, so it is safe to inline as a JS literal
+    const safeRedirect = JSON.stringify(readerPath);
+
     const html = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${title}</title>
-    
+    <title>${safeTitle}</title>
+
     <!-- Open Graph / Facebook / WhatsApp -->
     <meta property="og:type" content="website">
-    <meta property="og:title" content="${title.replace(/"/g, '&quot;')}">
-    <meta property="og:description" content="${description.replace(/"/g, '&quot;')}">
-    <meta property="og:image" content="${image}">
-    <meta property="og:url" content="https://archazzbook.vercel.app/reader.html?id=${id || ''}">
-    
+    <meta property="og:title" content="${safeTitle}">
+    <meta property="og:description" content="${safeDescription}">
+    <meta property="og:image" content="${safeImage}">
+    <meta property="og:url" content="${safeCanonical}">
+
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="${title.replace(/"/g, '&quot;')}">
-    <meta name="twitter:description" content="${description.replace(/"/g, '&quot;')}">
-    <meta name="twitter:image" content="${image}">
+    <meta name="twitter:title" content="${safeTitle}">
+    <meta name="twitter:description" content="${safeDescription}">
+    <meta name="twitter:image" content="${safeImage}">
 
     <style>
         body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f8fafc; color: #475569; }
@@ -76,13 +118,14 @@ module.exports = async (req, res) => {
     </div>
     <script>
         // Immediately redirect the real user to the reader page
-        window.location.replace("/reader.html${id ? '?id=' + id : ''}${chapter_id ? '&chapter_id=' + chapter_id : ''}");
+        window.location.replace(${safeRedirect});
     </script>
 </body>
 </html>
     `;
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
     res.status(200).send(html);
 };

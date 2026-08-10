@@ -68,6 +68,30 @@
 <script type="module" src="notifications.js"></script>
 
 <script>
+    // Admin page: block access unless a Supabase session exists.
+    async function requireAuthorSession() {
+        if (!window.SupabaseAPI) {
+            return new Promise((resolve) => setTimeout(() => resolve(requireAuthorSession()), 300));
+        }
+        const session = await window.SupabaseAPI.getSession();
+        if (!session || !session.access_token) {
+            window.location.replace('index.html');
+            return null;
+        }
+        return session;
+    }
+
+    const sessionReady = requireAuthorSession();
+
+    async function getAccessToken() {
+        const session = await window.SupabaseAPI.getSession();
+        if (!session || !session.access_token) {
+            window.location.replace('index.html');
+            throw new Error('Not authenticated');
+        }
+        return session.access_token;
+    }
+
     async function loadStats() {
         const { count, error } = await window.supabaseClient
             .from('fcm_tokens')
@@ -80,7 +104,9 @@
         }
     }
 
-    loadStats();
+    sessionReady.then((session) => {
+        if (session) loadStats();
+    });
 
     async function sendNotification() {
         const btn = document.getElementById('send-btn');
@@ -95,6 +121,7 @@
         statusBox.style.display = 'none';
 
         try {
+            const accessToken = await getAccessToken();
             let tokens = [];
 
             if (target === 'debug') {
@@ -133,7 +160,8 @@
                     const response = await fetch('/api/send-push', {
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/json'
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${accessToken}`
                         },
                         body: JSON.stringify({
                             token: token,
@@ -241,7 +269,8 @@
     }
 
     // Show My ID on load
-    window.onload = function() {
+    window.onload = async function() {
+        if (!(await sessionReady)) return;
         const myId = getOrGenerateBrowserId();
         const statsEl = document.getElementById('stats');
         // Clean existing text to append ID

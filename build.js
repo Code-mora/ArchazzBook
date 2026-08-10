@@ -14,14 +14,35 @@ if (!fs.existsSync(distDir)) {
   console.log('✅ Created public directory');
 }
 
+// Debug/test tooling must never be published: these pages expose internal data
+// and destructive local-reset actions.
+const EXCLUDED_FILES = new Set([
+  'debug-books.html',
+  'mobile-test.html',
+  'reset-data.html',
+  'test-stats.html',
+  'START-HERE.html',
+]);
+
 // Helper function to copy files
 function copyFiles(ext) {
-  const files = fs.readdirSync(rootDir).filter(file => file.endsWith(ext));
+  const files = fs
+    .readdirSync(rootDir)
+    .filter(file => file.endsWith(ext) && !EXCLUDED_FILES.has(file));
   files.forEach(file => {
     fs.copyFileSync(path.join(rootDir, file), path.join(distDir, file));
     console.log(`📋 Copied ${file}`);
   });
 }
+
+// Remove previously published debug pages that may still linger in the output folder
+EXCLUDED_FILES.forEach(file => {
+  const stalePath = path.join(distDir, file);
+  if (fs.existsSync(stalePath)) {
+    fs.rmSync(stalePath);
+    console.log(`🧹 Removed excluded file from output: ${file}`);
+  }
+});
 
 // 1. Copy HTML and CSS files directly
 copyFiles('.html');
