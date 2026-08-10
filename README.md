@@ -50,6 +50,20 @@ ARCHAZZ/
 └── README.md          # This file
 ```
 
+## 🧪 Tests
+
+Unit tests run on Node's built-in test runner — no extra dependencies:
+
+```bash
+npm test              # run the suite
+npm run test:coverage # run with a V8 coverage report
+```
+
+The browser scripts (`app.js`, `dashboard.js`, `writer.js`, `supabase-config.js`,
+`notifications.js`) are executed inside a `vm` sandbox backed by the minimal DOM
+stub in `test/helpers/`, so they are tested unmodified, exactly as the pages load
+them. Supabase, Firebase and Quill are replaced by stubs.
+
 ## 🎨 Customization
 
 ### Change Author Credentials
