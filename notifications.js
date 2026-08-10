@@ -55,8 +55,12 @@ function generateUUIDFallback() {
 async function hardReset() {
   console.log('🧹 Performing Hard Reset (Nuclear Option)...');
   try {
-    // 1. Delete Token
-    if (messaging) await deleteToken(messaging).catch(() => {});
+    // 1. Delete Token (best effort: a missing token is fine, but log why it failed)
+    if (messaging) {
+      await deleteToken(messaging).catch((err) => {
+        console.warn('⚠️ Could not delete existing FCM token:', err);
+      });
+    }
     
     // 2. Unregister ALL Service Workers
     if ('serviceWorker' in navigator) {
@@ -77,8 +81,11 @@ async function hardReset() {
     }
     
     console.log('✨ Cleanup complete. Reloading soon...');
+    return true;
   } catch (err) {
-    console.warn('Cleanup warning:', err);
+    // Cleanup is best effort, but the caller should know it was incomplete
+    console.error('❌ Cleanup failed:', err);
+    return false;
   }
 }
 
@@ -169,6 +176,10 @@ export async function setupNotifications(vapidKey) {
             await saveTokenToSupabase(freshToken);
             return true;
           }
+
+          // No token and no exception: don't fall through and return undefined
+          console.warn('⚠️ No registration token available after retry.');
+          return false;
         } catch (retryErr) {
           console.error('❌ Retry failed too:', retryErr);
           throw retryErr;
@@ -194,9 +205,8 @@ async function saveTokenToSupabase(token) {
 
       // Check if Supabase client is available (from window object)
       if (!window.supabaseClient) {
-        alert('❌ Error: Supabase Client not ready!');
         console.error('❌ Supabase client not found!');
-        return;
+        throw new Error('Supabase client not ready — token could not be saved');
       }
 
       console.log('💾 Saving token to Supabase...', { browserId });
@@ -212,14 +222,15 @@ async function saveTokenToSupabase(token) {
         }, { onConflict: 'browser_id' });
 
       if (error) {
-        alert('❌ DB Error: ' + error.message + ' (' + error.code + ')');
         console.error('❌ Error saving token to Supabase:', error);
-      } else {
-        console.log('✅ Token saved to Supabase!');
-        // alert('✅ Token Saved to DB!'); // Uncomment if needed
+        throw error;
       }
+
+      console.log('✅ Token saved to Supabase!');
   } catch (err) {
-      alert('❌ DB Exception: ' + err.message);
+      // Without the token stored, no push can ever be delivered — never report success
+      console.error('❌ Failed to save notification token:', err);
+      throw err;
   }
 }
 
@@ -249,15 +260,22 @@ if (window.location.search.includes('reset=true')) {
     // Need to wrap in async IIFE
     (async () => {
         alert('🔁 RESET MODE DETECTED. Nuclear Cleanup...');
-        await hardReset();
+        const cleanupOk = await hardReset();
         localStorage.clear(); // Clear storage too
-        alert('✅ App Reset Complete. Reloading fresh...');
+        alert(
+          cleanupOk
+            ? '✅ App Reset Complete. Reloading fresh...'
+            : '⚠️ Reset finished with errors — some cached data may remain. Reloading...'
+        );
         window.location.href = window.location.pathname;
     })();
 }
 
 // AUTO-ATTACH Listener (To avoid inline script issues)
 // Wait for DOM and Supabase to be ready
+const SUPABASE_WAIT_LIMIT = 100; // ~10s at 100ms per attempt
+let supabaseWaitAttempts = 0;
+
 function initNotificationUI() {
     console.log('📜 Notifications Script Loaded. Looking for buttons...');
     const btnAllow = document.getElementById('btn-allow');
@@ -266,6 +284,12 @@ function initNotificationUI() {
 
     // Check if Supabase is ready (it should be loaded before this module)
     if (!window.supabaseClient) {
+        // Give up eventually instead of polling silently forever
+        if (supabaseWaitAttempts >= SUPABASE_WAIT_LIMIT) {
+            console.error('❌ Supabase client never became available; notification setup disabled.');
+            return;
+        }
+        supabaseWaitAttempts++;
         console.warn('⚠️ Supabase not ready yet, retrying in 100ms...');
         setTimeout(initNotificationUI, 100);
         return;

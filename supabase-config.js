@@ -8,13 +8,32 @@ const SUPABASE_URL = 'https://ohruaeodmwbvhrcvrzgy.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ocnVhZW9kbXdidmhyY3Zyemd5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAyNzY0MDAsImV4cCI6MjA4NTg1MjQwMH0.e9SE-3gE9qfWbde-QD5gWR0VLUKF7PDgKg-0I3Uk5ys';
 
 // Initialize Supabase client on window object (avoid any local variable conflicts)
+// The CDN script may be blocked or still loading; without this guard the resulting
+// TypeError aborts the rest of this file, window.SupabaseAPI is never defined, and
+// every caller silently behaves as if Supabase were intentionally absent.
 if (!window.supabaseClient) {
-  window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  console.log('✅ Supabase client initialized');
+  if (window.supabase && typeof window.supabase.createClient === 'function') {
+    window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    console.log('✅ Supabase client initialized');
+  } else {
+    console.error('❌ Supabase JS library not loaded — API calls will fail until it is available');
+  }
 }
 
 // Storage bucket name for book covers
 const BOOK_COVERS_BUCKET = 'book-covers';
+
+/**
+ * Return the Supabase client, throwing a descriptive error when it is unavailable
+ * so callers fail loudly instead of crashing on `undefined`.
+ * @returns {Object} Supabase client
+ */
+function requireClient() {
+  if (!window.supabaseClient) {
+    throw new Error('Supabase client is not initialized (supabase-js failed to load)');
+  }
+  return window.supabaseClient;
+}
 
 // =============================
 // SUPABASE API FUNCTIONS
@@ -23,12 +42,13 @@ const BOOK_COVERS_BUCKET = 'book-covers';
 /**
  * Fetch all books from Supabase
  * @returns {Promise<Array>} Array of books
+ * @throws {Error} When the request fails, so callers can fall back or surface the failure
  */
 async function fetchBooksFromSupabase() {
   try {
     console.log('📚 Fetching books from Supabase...');
-    
-    const { data, error } = await window.supabaseClient
+
+    const { data, error } = await requireClient()
       .from('books')
       .select('*')
       .order('created_at', { ascending: false });
@@ -36,10 +56,10 @@ async function fetchBooksFromSupabase() {
     if (error) throw error;
 
     console.log(`✅ Retrieved ${data.length} books from Supabase`);
-    return data;
+    return data || [];
   } catch (error) {
     console.error('❌ Error fetching books:', error);
-    return [];
+    throw error;
   }
 }
 
@@ -52,7 +72,7 @@ async function createBookInSupabase(bookData) {
   try {
     console.log('📝 Creating book in Supabase:', bookData.title);
 
-    const { data, error } = await window.supabaseClient
+    const { data, error } = await requireClient()
       .from('books')
       .insert([bookData])
       .select()
@@ -78,7 +98,7 @@ async function updateBookInSupabase(bookId, updates) {
   try {
     console.log('✏️ Updating book in Supabase:', bookId);
 
-    const { data, error } = await window.supabaseClient
+    const { data, error } = await requireClient()
       .from('books')
       .update(updates)
       .eq('id', bookId)
@@ -104,7 +124,7 @@ async function deleteBookFromSupabase(bookId) {
   try {
     console.log('🗑️ Deleting book from Supabase:', bookId);
 
-    const { error } = await window.supabaseClient.from('books').delete().eq('id', bookId);
+    const { error } = await requireClient().from('books').delete().eq('id', bookId);
 
     if (error) throw error;
 
@@ -127,7 +147,7 @@ async function uploadCoverToSupabase(file, fileName) {
     console.log('📤 Uploading cover to Supabase:', fileName);
 
     // Upload file to storage
-    const { data, error } = await window.supabaseClient.storage
+    const { data, error } = await requireClient().storage
       .from(BOOK_COVERS_BUCKET)
       .upload(fileName, file, {
         cacheControl: '3600',
@@ -139,7 +159,7 @@ async function uploadCoverToSupabase(file, fileName) {
     // Get public URL
     const {
       data: { publicUrl },
-    } = window.supabaseClient.storage.from(BOOK_COVERS_BUCKET).getPublicUrl(fileName);
+    } = requireClient().storage.from(BOOK_COVERS_BUCKET).getPublicUrl(fileName);
 
     console.log('✅ Cover uploaded successfully:', publicUrl);
     return publicUrl;
@@ -152,13 +172,14 @@ async function uploadCoverToSupabase(file, fileName) {
 /**
  * Delete book cover from Supabase Storage
  * @param {string} fileName - File name to delete
- * @returns {Promise<boolean>} Success status
+ * @returns {Promise<boolean>} True on success
+ * @throws {Error} When the deletion fails
  */
 async function deleteCoverFromSupabase(fileName) {
   try {
     console.log('🗑️ Deleting cover from Supabase:', fileName);
 
-    const { error } = await window.supabaseClient.storage
+    const { error } = await requireClient().storage
       .from(BOOK_COVERS_BUCKET)
       .remove([fileName]);
 
@@ -168,19 +189,20 @@ async function deleteCoverFromSupabase(fileName) {
     return true;
   } catch (error) {
     console.error('❌ Error deleting cover:', error);
-    return false;
+    throw error;
   }
 }
 
 /**
  * Increment book views
  * @param {number} bookId - Book ID
- * @returns {Promise<boolean>} Success status
+ * @returns {Promise<boolean>} True on success
+ * @throws {Error} When the update fails
  */
 async function incrementBookViews(bookId) {
   try {
     // First get current views
-    const { data: book, error: fetchError } = await window.supabaseClient
+    const { data: book, error: fetchError } = await requireClient()
       .from('books')
       .select('views')
       .eq('id', bookId)
@@ -189,7 +211,7 @@ async function incrementBookViews(bookId) {
     if (fetchError) throw fetchError;
 
     // Increment views
-    const { error: updateError } = await window.supabaseClient
+    const { error: updateError } = await requireClient()
       .from('books')
       .update({ views: (book.views || 0) + 1 })
       .eq('id', bookId);
@@ -199,7 +221,7 @@ async function incrementBookViews(bookId) {
     return true;
   } catch (error) {
     console.error('❌ Error incrementing views:', error);
-    return false;
+    throw error;
   }
 }
 
@@ -208,10 +230,11 @@ async function incrementBookViews(bookId) {
  * @param {number} bookId - Book ID
  * @param {number} chapterId - Target Chapter ID (Optional)
  * @returns {Promise<Array>} Array of comments
+ * @throws {Error} When the request fails, so the UI can show a load error
  */
 async function fetchComments(bookId, chapterId = null) {
   try {
-    let query = window.supabaseClient
+    let query = requireClient()
       .from('comments')
       .select('*')
       .eq('book_id', bookId);
@@ -228,10 +251,10 @@ async function fetchComments(bookId, chapterId = null) {
     const { data, error } = await query.order('created_at', { ascending: true });
 
     if (error) throw error;
-    return data;
+    return data || [];
   } catch (error) {
     console.error('❌ Error fetching comments:', error);
-    return [];
+    throw error;
   }
 }
 
@@ -242,7 +265,7 @@ async function fetchComments(bookId, chapterId = null) {
  */
 async function createComment(commentData) {
   try {
-    const { data, error } = await window.supabaseClient
+    const { data, error } = await requireClient()
       .from('comments')
       .insert([commentData])
       .select()
@@ -259,11 +282,12 @@ async function createComment(commentData) {
 /**
  * Delete a comment
  * @param {number} commentId
- * @returns {Promise<boolean>}
+ * @returns {Promise<boolean>} True on success
+ * @throws {Error} When the deletion fails
  */
 async function deleteComment(commentId) {
   try {
-    const { error } = await window.supabaseClient
+    const { error } = await requireClient()
       .from('comments')
       .delete()
       .eq('id', commentId);
@@ -272,7 +296,7 @@ async function deleteComment(commentId) {
     return true;
   } catch (error) {
     console.error('❌ Error deleting comment:', error);
-    return false;
+    throw error;
   }
 }
 
@@ -280,11 +304,12 @@ async function deleteComment(commentId) {
  * Update a comment
  * @param {number} commentId
  * @param {string} newContent
- * @returns {Promise<boolean>}
+ * @returns {Promise<boolean>} True on success
+ * @throws {Error} When the update fails
  */
 async function updateComment(commentId, newContent) {
   try {
-    const { error } = await window.supabaseClient
+    const { error } = await requireClient()
       .from('comments')
       .update({ content: newContent })
       .eq('id', commentId);
@@ -293,7 +318,7 @@ async function updateComment(commentId, newContent) {
     return true;
   } catch (error) {
     console.error('❌ Error updating comment:', error);
-    return false;
+    throw error;
   }
 }
 
@@ -303,7 +328,7 @@ async function updateComment(commentId, newContent) {
  */
 async function addReaction(bookId, chapterId, browserId, emoji) {
   try {
-    const { data, error } = await window.supabaseClient
+    const { data, error } = await requireClient()
       .from('reactions')
       .upsert([{ book_id: bookId, chapter_id: chapterId, browser_id: browserId, emoji }], {
         onConflict: 'book_id,chapter_id,browser_id'
@@ -321,10 +346,11 @@ async function addReaction(bookId, chapterId, browserId, emoji) {
 
 /**
  * Hapus reaction (toggle off)
+ * @throws {Error} When the deletion fails
  */
 async function deleteReaction(bookId, chapterId, browserId) {
   try {
-    const { error } = await window.supabaseClient
+    const { error } = await requireClient()
       .from('reactions')
       .delete()
       .eq('book_id', bookId)
@@ -335,16 +361,17 @@ async function deleteReaction(bookId, chapterId, browserId) {
     return true;
   } catch (error) {
     console.error('❌ Error deleting reaction:', error);
-    return false;
+    throw error;
   }
 }
 
 /**
  * Ambil semua reaction untuk suatu chapter/buku
+ * @throws {Error} When the request fails
  */
 async function fetchReactions(bookId, chapterId = null) {
   try {
-    let query = window.supabaseClient
+    let query = requireClient()
       .from('reactions')
       .select('emoji, browser_id')
       .eq('book_id', bookId);
@@ -358,16 +385,17 @@ async function fetchReactions(bookId, chapterId = null) {
     return data || [];
   } catch (error) {
     console.error('❌ Error fetching reactions:', error);
-    return [];
+    throw error;
   }
 }
 
 /**
  * Ambil total "Happy Readers" global = jumlah unique browser_id yang pernah react
+ * @throws {Error} When the request fails
  */
 async function countHappyReaders() {
   try {
-    const { count, error } = await window.supabaseClient
+    const { count, error } = await requireClient()
       .from('reactions')
       .select('browser_id', { count: 'exact', head: true });
 
@@ -375,7 +403,7 @@ async function countHappyReaders() {
     return count || 0;
   } catch (error) {
     console.error('❌ Error counting happy readers:', error);
-    return 0;
+    throw error;
   }
 }
 
@@ -388,7 +416,7 @@ async function countHappyReaders() {
  */
 async function signIn(email, password) {
   try {
-    const { data, error } = await window.supabaseClient.auth.signInWithPassword({
+    const { data, error } = await requireClient().auth.signInWithPassword({
       email: email,
       password: password,
     });
@@ -402,29 +430,34 @@ async function signIn(email, password) {
 
 /**
  * Sign out the current user
+ * @returns {Promise<boolean>} True on success
+ * @throws {Error} When sign out fails
  */
 async function signOut() {
   try {
-    const { error } = await window.supabaseClient.auth.signOut();
+    const { error } = await requireClient().auth.signOut();
     if (error) throw error;
     return true;
   } catch (error) {
     console.error('❌ Error signing out:', error);
-    return false;
+    throw error;
   }
 }
 
 /**
  * Get current session/user
+ * @returns {Promise<Object|null>} The session, or null when nobody is signed in
+ * @throws {Error} When the session cannot be read — callers must not treat this as
+ * "signed out", otherwise a transient failure logs the author out of the dashboard
  */
 async function getSession() {
   try {
-    const { data, error } = await window.supabaseClient.auth.getSession();
+    const { data, error } = await requireClient().auth.getSession();
     if (error) throw error;
     return data.session;
   } catch (error) {
     console.error('❌ Error getting session:', error);
-    return null;
+    throw error;
   }
 }
 
