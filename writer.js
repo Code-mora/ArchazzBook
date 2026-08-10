@@ -26,45 +26,8 @@ let pageEditors = new Map(); // Store Quill instances for each page
 let isEditMode = false;
 let editingBookId = null;
 
-// =============================
-// LOCALSTORAGE UTILITIES
-// =============================
-
-// Get books from localStorage with fallback
-function getBooksFromStorage() {
-  try {
-    const savedBooks = localStorage.getItem('books');
-    if (savedBooks) {
-      const parsed = JSON.parse(savedBooks);
-      console.log('📚 Retrieved ' + parsed.length + ' books from localStorage');
-      return parsed;
-    }
-  } catch (e) {
-    console.error('❌ Error reading books from localStorage:', e);
-  }
-  return [];
-}
-
-// Save books to localStorage with verification
-function saveBooksToStorage(booksData) {
-  try {
-    localStorage.setItem('books', JSON.stringify(booksData));
-    // Verify save
-    const verify = localStorage.getItem('books');
-    if (verify) {
-      console.log(
-        '✅ Successfully saved ' + booksData.length + ' books to localStorage',
-      );
-      return true;
-    } else {
-      console.error('❌ Verification failed - data may not have been saved');
-      return false;
-    }
-  } catch (e) {
-    console.error('❌ Error saving books to localStorage:', e);
-    return false;
-  }
-}
+// Shared helpers (getBooksFromStorage, showNotification, stripHtml, modals, ...)
+// live in shared-utils.js and are exposed as globals.
 
 document.addEventListener('DOMContentLoaded', async function () {
   // Check authentication first (await so we don't proceed if not logged in)
@@ -88,13 +51,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
 async function checkWriterAuth() {
   // Wait for SupabaseAPI to be ready (it loads async from supabase-config.js)
-  let attempts = 0;
-  while (!window.SupabaseAPI && attempts < 10) {
-    await new Promise(resolve => setTimeout(resolve, 300));
-    attempts++;
-  }
-
-  if (!window.SupabaseAPI) {
+  if (!(await waitForSupabase())) {
     console.error('Supabase not loaded, redirecting...');
     window.location.href = 'index.html';
     return false;
@@ -135,24 +92,15 @@ async function checkEditMode() {
 }
 
 async function loadExistingBook(bookId) {
-  let book = null;
-  
-  // 1. Try Supabase first (to ensure we get the latest cloud updates, like drafts from other devices)
-  if (window.SupabaseAPI) {
-    try {
-      console.log(`🔍 Fetching book ${bookId} from Supabase...`);
-      const sbBooks = await window.SupabaseAPI.fetchBooks();
-      book = sbBooks.find(b => b.id == bookId);
-    } catch (err) {
-      console.error('❌ Error fetching from Supabase:', err);
-    }
-  }
+  // Prefer Supabase (latest cloud updates, e.g. drafts from other devices) and
+  // fall back to local storage when unavailable.
+  const books = await fetchBooksWithFallback('Writer');
+  let book = books.find((b) => b.id == bookId);
 
-  // 2. If not found in Supabase (or offline), try Local Storage
+  // Supabase may have succeeded but not contain this (local-only) book
   if (!book) {
-    console.log(`📦 Book ${bookId} not found in cloud or offline, trying local storage...`);
-    const localBooks = getBooksFromStorage();
-    book = localBooks.find((b) => b.id == bookId);
+    console.log(`📦 Book ${bookId} not found in cloud, trying local storage...`);
+    book = getBooksFromStorage().find((b) => b.id == bookId);
   }
 
   if (!book) {
@@ -161,11 +109,6 @@ async function loadExistingBook(bookId) {
     window.location.href = 'dashboard.html';
     return;
   }
-
-  console.log('✅ Found book for editing:', book.title);
-
-  // If fetched from Supabase, ensure we don't overwrite it as a "new" local book
-  // (Handling logic continues below...)
 
   console.log('✅ Found book for editing:', book.title);
 
@@ -194,10 +137,9 @@ async function loadExistingBook(bookId) {
     // New format - normalize Supabase field names to writer's expected format
     currentBook = {
       ...book,
-      // Supabase uses 'cover_url', writer uses 'cover'
+      // Supabase uses 'cover_url'/'author_name', writer uses 'cover'/'author'
       cover: book.cover || book.cover_url || null,
-      // Supabase uses 'author_name', writer uses 'author'
-      author: book.author || book.author_name || 'Archazz',
+      author: getBookAuthor(book),
     };
   }
 
@@ -703,12 +645,6 @@ function updateStats() {
     currentBook.chapters.length;
 }
 
-function stripHtml(html) {
-  const tmp = document.createElement('div');
-  tmp.innerHTML = html;
-  return tmp.textContent || tmp.innerText || '';
-}
-
 // =============================
 // SAVE & PUBLISH
 // =============================
@@ -929,45 +865,31 @@ function generatePreview() {
 // =============================
 
 function uploadCover() {
-  document.getElementById('cover-modal').classList.add('active');
-  document.body.style.overflow = 'hidden';
+  openModal('cover-modal');
 }
 
-function handleCoverUpload(event) {
-  const file = event.target.files[0];
-  if (!file) return;
+async function handleCoverUpload(event) {
+  const dataUrl = await readImageFile(event.target.files[0]);
+  if (!dataUrl) return;
 
-  // Check file size (5MB max)
-  if (file.size > 5 * 1024 * 1024) {
-    alert('File size must be less than 5MB');
-    return;
-  }
+  currentBook.cover = dataUrl;
 
-  // Read file
-  const reader = new FileReader();
-  reader.onload = function (e) {
-    currentBook.cover = e.target.result;
+  // Show preview in modal
+  document.getElementById('preview-img').src = currentBook.cover;
+  document.getElementById('cover-preview').style.display = 'flex';
 
-    // Show preview in modal
-    document.getElementById('preview-img').src = currentBook.cover;
-    document.getElementById('cover-preview').style.display = 'flex';
+  // Show preview in sidebar
+  document.getElementById('sidebar-cover-preview').src = currentBook.cover;
+  document.getElementById('cover-display-card').style.display = 'block';
 
-    // Show preview in sidebar
-    document.getElementById('sidebar-cover-preview').src = currentBook.cover;
-    document.getElementById('cover-display-card').style.display = 'block';
-
-    // Update upload UI
-    const uploadDiv = document.getElementById('cover-upload');
-    uploadDiv.innerHTML = `
+  // Update upload UI
+  document.getElementById('cover-upload').innerHTML = `
             <i class="fas fa-check-circle" style="color: #10B981; font-size: 3rem;"></i>
             <p><strong>Cover uploaded successfully</strong></p>
             <p style="color: var(--gray); font-size: 0.875rem;">Click to change</p>
         `;
 
-    showNotification('Cover uploaded!');
-  };
-
-  reader.readAsDataURL(file);
+  showNotification('Cover uploaded!');
 }
 
 // =============================
@@ -1045,23 +967,6 @@ function previewBook() {
 }
 
 // =============================
-// MODAL MANAGEMENT
-// =============================
-
-function closeModal(modalId) {
-  const modal = document.getElementById(modalId);
-  modal.classList.remove('active');
-  document.body.style.overflow = 'auto';
-}
-
-// Close modal when clicking outside
-document.addEventListener('click', function (event) {
-  if (event.target.classList.contains('modal')) {
-    closeModal(event.target.id);
-  }
-});
-
-// =============================
 // UTILITIES
 // =============================
 
@@ -1074,31 +979,6 @@ function logout() {
     localStorage.removeItem('currentUser');
     window.location.href = 'index.html';
   }
-}
-
-function showNotification(message) {
-  const notification = document.createElement('div');
-  notification.style.cssText = `
-        position: fixed;
-        top: 100px;
-        right: 2rem;
-        background: linear-gradient(135deg, #667EEA 0%, #764BA2 100%);
-        color: white;
-        padding: 1rem 1.5rem;
-        border-radius: 1rem;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-        z-index: 3000;
-        animation: slideInRight 0.3s ease;
-        max-width: 300px;
-    `;
-  notification.textContent = message;
-
-  document.body.appendChild(notification);
-
-  setTimeout(() => {
-    notification.style.animation = 'slideOutRight 0.3s ease';
-    setTimeout(() => notification.remove(), 300);
-  }, 3000);
 }
 
 // Keyboard shortcuts
