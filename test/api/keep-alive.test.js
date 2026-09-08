@@ -213,8 +213,13 @@ test('requires the cron secret once CRON_SECRET is configured', async () => {
 
       const anonymous = createResponse();
       await keepAlive(createRequest(), anonymous);
-      assert.equal(anonymous.statusCode, 401);
-      assert.equal(fetchStub.calls.length, 0, 'no Supabase call for rejected requests');
+      assert.equal(anonymous.statusCode, 200);
+      assert.deepEqual(
+        { ok: anonymous.body.ok, protected: anonymous.body.protected },
+        { ok: true, protected: true },
+      );
+      assert.equal(anonymous.body.table, undefined, 'status page does not report a ping');
+      assert.equal(fetchStub.calls.length, 0, 'no Supabase call without the secret');
 
       const allowed = createResponse();
       await keepAlive(createRequest({ headers: { authorization: 'Bearer s3cret' } }), allowed);

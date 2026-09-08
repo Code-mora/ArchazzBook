@@ -18,10 +18,24 @@ module.exports = async (req, res) => {
   }
 
   // Vercel cron sends `Authorization: Bearer $CRON_SECRET` when the secret is
-  // configured; without it the endpoint stays public (it only does a read).
+  // configured; without the env var the endpoint stays public (it only reads).
+  // Anonymous visitors (e.g. someone opening the URL in a browser) get a
+  // harmless status page instead of triggering a database read; a wrong
+  // secret is still rejected.
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && req.headers.authorization !== `Bearer ${cronSecret}`) {
-    return res.status(401).json({ ok: false, error: 'Unauthorized' });
+  if (cronSecret) {
+    const authorization = req.headers.authorization;
+    if (!authorization) {
+      return res.status(200).json({
+        ok: true,
+        protected: true,
+        message:
+          'Keep-alive is running on the Vercel cron schedule. Manual pings require the cron secret.',
+      });
+    }
+    if (authorization !== `Bearer ${cronSecret}`) {
+      return res.status(401).json({ ok: false, error: 'Unauthorized' });
+    }
   }
 
   const startedAt = Date.now();
